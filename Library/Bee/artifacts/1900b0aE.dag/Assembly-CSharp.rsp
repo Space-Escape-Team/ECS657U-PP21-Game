@@ -363,8 +363,10 @@
 -analyzer:"C:/Program Files/Unity/Hub/Editor/2023.1.20f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.Properties.SourceGenerator.dll"
 -analyzer:"C:/Program Files/Unity/Hub/Editor/2023.1.20f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.SourceGenerators.dll"
 "Assets/Scripts/Player/PlayerPuzzleInteractor.cs"
-"Assets/Scripts/Puzzle/PuzzlePanel_scriptcript.cs"
+"Assets/Scripts/Puzzle/PuzzlePanel_script.cs"
 "Assets/Scripts/Puzzle/Puzzle_script.cs"
+"Assets/UI/PuzzleA_UI.cs"
+"Assets/UI/PuzzleB_UI.cs"
 -langversion:9.0
 
 /deterministic
