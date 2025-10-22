@@ -10,8 +10,6 @@ public class PlayerMovement : MonoBehaviour
     public InputActionReference move;
     public Rigidbody rb;
 
-    private float horizInput;
-    private float vertInput;
     private Vector3 moveDirection;
 
     // Start is called before the first frame update
@@ -24,11 +22,19 @@ public class PlayerMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        moveDirection = move.action.ReadValue<Vector3>();
+        Vector2 input = move.action.ReadValue<Vector2>();
+
+        // Change only horizontal direction based on camera
+        moveDirection = (orientation.forward * input.y + orientation.right * input.x).normalized;
+        moveDirection.y = 0;
     }
 
     private void FixedUpdate()
     {
-        rb.velocity= new Vector3(moveDirection.x * moveSpeed, moveDirection.y * moveSpeed, moveDirection.z * moveSpeed);
+        // Horizontal directions from WASD/Joystick inputs 
+        float horizX = moveDirection.x * moveSpeed;
+        float horizZ = moveDirection.z * moveSpeed;
+
+        rb.velocity= new Vector3(horizX, rb.velocity.y, horizZ);
     }
 }

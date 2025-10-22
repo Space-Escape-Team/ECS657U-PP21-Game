@@ -18,7 +18,16 @@
                     "name": "Move",
                     "type": "PassThrough",
                     "id": "f6e870dd-319f-40f8-8e47-59fe9853042d",
-                    "expectedControlType": "Vector3",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Camera",
+                    "type": "PassThrough",
+                    "id": "d331476a-46cf-4700-a4ea-b7ec8875a542",
+                    "expectedControlType": "Vector2",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -31,15 +40,26 @@
                     "path": "<Keyboard>/enter",
                     "interactions": "",
                     "processors": "",
-                    "groups": "Keyboard",
+                    "groups": "KB+Mouse",
                     "action": "Attack",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
                 {
-                    "name": "3D Vector",
-                    "id": "1a7a29d0-52fd-4f09-b5fd-27f99fba1ac2",
-                    "path": "3DVector",
+                    "name": "",
+                    "id": "1d887f1e-b0ef-40e4-a549-269aaf03e116",
+                    "path": "<Mouse>/delta",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KB+Mouse",
+                    "action": "Camera",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "2D Vector",
+                    "id": "95c89a72-0980-47ea-8fcc-66c6c61e40e7",
+                    "path": "2DVector",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -49,66 +69,44 @@
                 },
                 {
                     "name": "up",
-                    "id": "da64116e-db2f-40b2-b313-a1f1aa0ab3f4",
-                    "path": "<Keyboard>/space",
+                    "id": "a7be38b5-b98c-4494-99e5-a86a0c6386aa",
+                    "path": "<Keyboard>/w",
                     "interactions": "",
                     "processors": "",
-                    "groups": "Keyboard",
+                    "groups": "",
                     "action": "Move",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
                 {
                     "name": "down",
-                    "id": "6d782fc8-7047-4a2d-b022-bd34cff18907",
-                    "path": "<Keyboard>/ctrl",
+                    "id": "1d6bfb3c-84cd-43b5-af0d-e615a3d10dec",
+                    "path": "<Keyboard>/s",
                     "interactions": "",
                     "processors": "",
-                    "groups": "Keyboard",
+                    "groups": "",
                     "action": "Move",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
                 {
                     "name": "left",
-                    "id": "cc03e6da-3fe7-4c38-aedf-416b7fd37569",
+                    "id": "9bb313d4-232d-4c95-a384-d3cb6058d788",
                     "path": "<Keyboard>/a",
                     "interactions": "",
                     "processors": "",
-                    "groups": "Keyboard",
+                    "groups": "",
                     "action": "Move",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
                 {
                     "name": "right",
-                    "id": "c051e02e-9fc1-45b3-af3f-75da06b86b7f",
+                    "id": "25cd0356-fe3b-40ed-8629-fa8cc88e5613",
                     "path": "<Keyboard>/d",
                     "interactions": "",
                     "processors": "",
-                    "groups": "Keyboard",
-                    "action": "Move",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "forward",
-                    "id": "07385ecd-e3fb-4133-9693-015a45dcd4b5",
-                    "path": "<Keyboard>/w",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Keyboard",
-                    "action": "Move",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "backward",
-                    "id": "0241ad2e-2e5d-452a-8744-be5a75b7dbe9",
-                    "path": "<Keyboard>/s",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Keyboard",
+                    "groups": "",
                     "action": "Move",
                     "isComposite": false,
                     "isPartOfComposite": true
@@ -118,11 +116,16 @@
     ],
     "controlSchemes": [
         {
-            "name": "Keyboard",
-            "bindingGroup": "Keyboard",
+            "name": "KB+Mouse",
+            "bindingGroup": "KB+Mouse",
             "devices": [
                 {
                     "devicePath": "<Keyboard>",
+                    "isOptional": false,
+                    "isOR": false
+                },
+                {
+                    "devicePath": "<Mouse>",
                     "isOptional": false,
                     "isOR": false
                 }
