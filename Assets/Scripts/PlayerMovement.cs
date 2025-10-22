@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
+    [Header("References")]
     public float moveSpeed;
     public Transform orientation;
     public InputActionReference move;

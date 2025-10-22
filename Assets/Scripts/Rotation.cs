@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class NewBehaviourScript : MonoBehaviour
+public class Rotation : MonoBehaviour
 {
+    [Header("References")]
     public Transform player;
     public Transform playerObj;
     public Transform orientation;
     public Rigidbody rb;
-    public float rotationSpeed;
     public InputActionReference moveAction;
+
+    [Header("Values")]
+    public float rotationSpeed;
 
     private Vector2 moveInput;
 
