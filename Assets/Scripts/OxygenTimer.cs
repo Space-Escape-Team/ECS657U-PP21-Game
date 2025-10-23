@@ -14,7 +14,7 @@ public class OxygenTimer : MonoBehaviour
 
     void Start()
     {
-        SetTimeLeft(10);
+        SetTimeLeft(90);
     }
 
     private void SetTimeLeft(float timeInSeconds)
