@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028331, g: 0.2257133, b: 0.3069217, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -682,6 +682,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91e61f7065773b444bcce0e69c0ad0ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  timerText: {fileID: 654121430}
+  playerHealth: {fileID: 852721471}
 --- !u!114 &654121430
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1001,18 +1003,18 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 704638956}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 990}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 852721470}
   - {fileID: 654121428}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1667988456}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 1}
-  m_SizeDelta: {x: 1000, y: 1000}
+  m_AnchoredPosition: {x: 355.00003, y: 219.4}
+  m_SizeDelta: {x: 710.00006, y: 438.8}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &712558806
 GameObject:
@@ -1294,6 +1296,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cbfb96e948f2f5c46adb8d53b1efe032, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  healthBarSlider: {fileID: 852721472}
 --- !u!114 &852721472
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2066,7 +2069,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 704638960}
   m_Father: {fileID: 2050128543}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1667988457
@@ -3208,5 +3212,4 @@ SceneRoots:
   - {fileID: 1527461472}
   - {fileID: 1919536486}
   - {fileID: 1225022342}
-  - {fileID: 704638960}
   - {fileID: 320265227}
