@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: 5f121a02d12c4ab4cbf836bb4421ad30
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - puzzleA_UI: {fileID: 3760138212090775552, guid: 4433da9de4fa9344d9871b19df022be1, type: 3}
+  - puzzleB_UI: {fileID: 3519058227432609664, guid: 633254455c46db0438571f7c14230ea8, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
