@@ -1,175 +1,144 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
-using System.Linq;
+using UnityEngine.InputSystem;
 
 public class PuzzleA_UI : MonoBehaviour
 {
-    private PuzzlePanel_script parentPanel;
+    [Header("Puzzle References")]
+    [SerializeField] private PuzzlePanel_script puzzlePanel;
+    [SerializeField] private Transform leftPanel;
+    [SerializeField] private Transform rightPanel;
+    [SerializeField] private Transform wiresParent;
+    [SerializeField] private LineRenderer wirePrefab;
 
-    [Header("Node Containers")]
-    public Transform leftPanel;
-    public Transform rightPanel;
-    public Transform wireParent;
+    private Controls controls;
+    private bool puzzleActive = false;
 
-    [Header("Wire Settings")]
-    public Material wireMaterial;
-    public float lineWidth = 5f;
+    private List<Image> leftNodes = new List<Image>();
+    private List<Image> rightNodes = new List<Image>();
 
-    private Dictionary<Image, Image> correctPairs = new Dictionary<Image, Image>();
-    private Dictionary<Image, Image> playerConnections = new Dictionary<Image, Image>();
+    private Image selectedLeftNode;
+    private List<(Image left, Image right)> connections = new List<(Image, Image)>();
 
-    private Image draggingFrom;
-    private LineRenderer currentLine;
-
-    void Awake()
+    private void Awake()
     {
-        parentPanel = FindObjectOfType<PuzzlePanel_script>();
+        if (puzzlePanel == null)
+            puzzlePanel = GetComponentInParent<PuzzlePanel_script>();
+
+        controls = new Controls();
+        controls.Gameplay.Click.performed += ctx => HandleClick();
+        controls.Gameplay.Cancel.performed += ctx => ClosePuzzle();
     }
 
-    void Start()
+    private void OnEnable()
     {
-        SetupPuzzle();
+        controls.Enable();
+        InitPuzzle();
     }
 
-    // ----------------------------------------------------------------
-
-    public void SetupPuzzle()
+    private void OnDisable()
     {
-        // Clear any previous wires
-        foreach (Transform child in wireParent)
-            Destroy(child.gameObject);
-
-        playerConnections.Clear();
-
-        // Collect nodes
-        List<Image> leftNodes = leftPanel.GetComponentsInChildren<Image>().ToList();
-        List<Image> rightNodes = rightPanel.GetComponentsInChildren<Image>().ToList();
-
-        // Randomize right
-        rightNodes = rightNodes.OrderBy(x => Random.value).ToList();
-
-        // Assign pairs by colour 
-        correctPairs.Clear();
-        foreach (var left in leftNodes)
-        {
-            var match = rightNodes.FirstOrDefault(r => r.name.Contains(left.name.Split('_')[1]));
-            correctPairs[left] = match;
-        }
-
-        // layout right nodes vertically
-        for (int i = 0; i < rightNodes.Count; i++)
-        {
-            RectTransform rt = rightNodes[i].GetComponent<RectTransform>();
-            rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, -100 * i);
-        }
+        controls.Disable();
     }
 
-    void Update()
+    private void InitPuzzle()
     {
-        if (draggingFrom != null && currentLine != null)
+        leftNodes.Clear();
+        rightNodes.Clear();
+        connections.Clear();
+
+        foreach (Transform child in leftPanel)
         {
-            Vector3 worldPos = Input.mousePosition;
-            currentLine.SetPosition(1, worldPos);
+            Image node = child.GetComponent<Image>();
+            if (node != null) leftNodes.Add(node);
         }
 
-        if (Input.GetMouseButtonDown(0))
+        foreach (Transform child in rightPanel)
         {
-            TryBeginDrag();
+            Image node = child.GetComponent<Image>();
+            if (node != null) rightNodes.Add(node);
         }
-        else if (Input.GetMouseButtonUp(0) && draggingFrom != null)
-        {
-            TryEndDrag();
-        }
+
+        // Shuffle right nodes for random placement
+        rightNodes.Shuffle();
+
+        puzzleActive = true;
     }
 
-    void TryBeginDrag()
+    private void HandleClick()
     {
-        // Check clicked a left node
-        foreach (Image node in leftPanel.GetComponentsInChildren<Image>())
+        if (!puzzleActive) return;
+
+        // Raycast into UI for clicked node
+        Vector2 mousePos = Mouse.current.position.ReadValue();
+        var raycastResults = new List<UnityEngine.EventSystems.RaycastResult>();
+        var eventData = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current)
         {
-            if (RectTransformUtility.RectangleContainsScreenPoint(
-                node.rectTransform, Input.mousePosition))
+            position = mousePos
+        };
+        UnityEngine.EventSystems.EventSystem.current.RaycastAll(eventData, raycastResults);
+
+        foreach (var result in raycastResults)
+        {
+            Image clickedNode = result.gameObject.GetComponent<Image>();
+            if (clickedNode == null) continue;
+
+            if (leftNodes.Contains(clickedNode))
             {
-                draggingFrom = node;
-                StartNewWire(node);
-                break;
+                selectedLeftNode = clickedNode; // select a left node
+                return;
             }
-        }
-    }
-
-    void TryEndDrag()
-    {
-        foreach (Image node in rightPanel.GetComponentsInChildren<Image>())
-        {
-            if (RectTransformUtility.RectangleContainsScreenPoint(
-                node.rectTransform, Input.mousePosition))
+            else if (rightNodes.Contains(clickedNode) && selectedLeftNode != null)
             {
-                ConnectNodes(draggingFrom, node);
-                draggingFrom = null;
-                currentLine = null;
-                CheckCompletion();
+                // Connect left → right
+                ConnectNodes(selectedLeftNode, clickedNode);
+                selectedLeftNode = null;
+
+                if (CheckIfSolved())
+                    SolvePuzzle();
                 return;
             }
         }
-
-        // If not dropped on valid node, delete line
-        Destroy(currentLine.gameObject);
-        draggingFrom = null;
-        currentLine = null;
     }
 
-    void StartNewWire(Image startNode)
+    private void ConnectNodes(Image left, Image right)
     {
-        GameObject lineObj = new GameObject("Wire");
-        lineObj.transform.SetParent(wireParent, false);
+        connections.Add((left, right));
 
-        LineRenderer lr = lineObj.AddComponent<LineRenderer>();
-        lr.positionCount = 2;
-        lr.material = wireMaterial;
-        lr.startWidth = lr.endWidth = lineWidth;
-        lr.useWorldSpace = true;
-
-        Vector3 startPos = startNode.rectTransform.position;
-        lr.SetPosition(0, startPos);
-        lr.SetPosition(1, startPos);
-
-        currentLine = lr;
+        LineRenderer wire = Instantiate(wirePrefab, wiresParent);
+        wire.positionCount = 2;
+        wire.SetPosition(0, left.transform.position);
+        wire.SetPosition(1, right.transform.position);
+        wire.startWidth = 0.05f;
+        wire.endWidth = 0.05f;
     }
 
-    void ConnectNodes(Image from, Image to)
+    private bool CheckIfSolved()
     {
-        playerConnections[from] = to;
-
-        currentLine.SetPosition(1, to.rectTransform.position);
-    }
-
-    void CheckCompletion()
-    {
-        if (playerConnections.Count < correctPairs.Count) return;
-
-        bool allCorrect = correctPairs.All(pair =>
-            playerConnections.ContainsKey(pair.Key) &&
-            playerConnections[pair.Key] == pair.Value);
-
-        if (allCorrect)
+        // Solved if every left node is connected to the matching-colored right node
+        foreach (var pair in connections)
         {
-            Debug.Log("Puzzle A completed!");
-            parentPanel.PuzzleCompleted();
+            if (pair.left.name.Replace("LeftNode_", "") != pair.right.name.Replace("RightNode_", ""))
+                return false;
         }
+
+        return connections.Count == leftNodes.Count;
     }
 
-    public void ResetPuzzle()
+    private void SolvePuzzle()
     {
-        foreach (Transform child in wireParent)
-            Destroy(child.gameObject);
+        puzzleActive = false;
+        if (puzzlePanel != null)
+            puzzlePanel.MarkCompleted();
 
-        playerConnections.Clear();
-        SetupPuzzle();
+        Debug.Log("Puzzle A solved!");
     }
 
-    public void ExitPuzzle()
+    private void ClosePuzzle()
     {
-        parentPanel.ClosePuzzle();
+        puzzleActive = false;
+        if (puzzlePanel != null)
+            puzzlePanel.TryClosePuzzle();
     }
 }

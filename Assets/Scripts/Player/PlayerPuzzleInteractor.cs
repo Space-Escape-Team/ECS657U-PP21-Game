@@ -1,43 +1,42 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.InputSystem;
 
 public class PlayerPuzzleInteractor : MonoBehaviour
 {
-    [Header("Puzzle Interaction Settings")]
+    [Header("Interaction Settings")]
     public float interactionRange = 3f;
-    public KeyCode interactKey = KeyCode.E;
     public LayerMask puzzleLayer;
 
     [Header("UI Elements")]
-    public GameObject promptUI;
-    public TextMeshProUGUI promptText;
+    [SerializeField] private GameObject promptUI;
+    [SerializeField] private TextMeshProUGUI promptText;
 
     private Camera cam;
+    private Controls controls;
     private Puzzle_script currentPuzzle;
 
-    void Start()
+    private void Awake()
     {
         cam = Camera.main;
+        controls = new Controls();
 
-        if (promptUI != null)
-            promptUI.SetActive(false);
+        controls.Gameplay.Interact.performed += ctx => TryInteract();
+        controls.Gameplay.Cancel.performed += ctx => TryCancel();
     }
 
-    void Update()
+    private void OnEnable() => controls.Enable();
+    private void OnDisable() => controls.Disable();
+
+    private void Update()
     {
         HandlePuzzlePrompt();
-
-        if (Input.GetKeyDown(interactKey) && currentPuzzle != null)
-        {
-            currentPuzzle.ActivatePuzzle();
-        }
     }
 
-    void HandlePuzzlePrompt()
+    private void HandlePuzzlePrompt()
     {
         Ray ray = new Ray(cam.transform.position, cam.transform.forward);
+
         if (Physics.Raycast(ray, out RaycastHit hit, interactionRange, puzzleLayer))
         {
             Puzzle_script puzzle = hit.collider.GetComponent<Puzzle_script>();
@@ -47,7 +46,7 @@ public class PlayerPuzzleInteractor : MonoBehaviour
                 if (puzzle != currentPuzzle)
                 {
                     currentPuzzle = puzzle;
-                    ShowPrompt(puzzle.puzzlePrompt);
+                    ShowPrompt(puzzle.puzzlePrompt); // use string defined in Puzzle_script
                 }
                 return;
             }
@@ -57,7 +56,22 @@ public class PlayerPuzzleInteractor : MonoBehaviour
         currentPuzzle = null;
     }
 
-    void ShowPrompt(string message)
+    private void TryInteract()
+    {
+        if (currentPuzzle != null)
+        {
+            currentPuzzle.TryOpenPuzzle();
+            HidePrompt();
+        }
+    }
+
+    private void TryCancel()
+    {
+        if (currentPuzzle != null)
+            currentPuzzle.TryClosePuzzle();
+    }
+
+    private void ShowPrompt(string message)
     {
         if (promptUI != null && promptText != null)
         {
@@ -66,10 +80,9 @@ public class PlayerPuzzleInteractor : MonoBehaviour
         }
     }
 
-    void HidePrompt()
+    private void HidePrompt()
     {
         if (promptUI != null)
             promptUI.SetActive(false);
     }
 }
-

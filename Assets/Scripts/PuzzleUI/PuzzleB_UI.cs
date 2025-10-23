@@ -2,25 +2,33 @@ using UnityEngine;
 
 public class PuzzleB_UI : MonoBehaviour
 {
-    private PuzzlePanel_script parentPanel;
+    [SerializeField] private PuzzlePanel_script puzzlePanel;
 
-    void Awake()
+    private bool solved = false;
+
+    private void Start()
     {
-        parentPanel = FindObjectOfType<PuzzlePanel_script>();
+        if (puzzlePanel == null)
+            puzzlePanel = GetComponentInParent<PuzzlePanel_script>();
     }
 
-    public void CompletePuzzle()
+    private void Update()
     {
-        parentPanel.PuzzleCompleted();
+        if (!solved)
+        {
+            if (UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame)
+            {
+                SolvePuzzle();
+            }
+        }
     }
 
-    public void ResetPuzzle()
+    private void SolvePuzzle()
     {
-        Debug.Log("Puzzle B reset");
-    }
+        solved = true;
+        if (puzzlePanel != null)
+            puzzlePanel.MarkCompleted();
 
-    public void ExitPuzzle()
-    {
-        parentPanel.ClosePuzzle();
+        Debug.Log("Puzzle B solved!");
     }
 }
