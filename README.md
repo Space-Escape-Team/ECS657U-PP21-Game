@@ -9,3 +9,4 @@ Controls:
 Use Arrow Keys to move around.
 Use Mouse to look around.
 Click on puzzle panels to solve them.
+Make sure your health doesn't reach zero.
