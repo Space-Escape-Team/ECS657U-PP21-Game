@@ -39,7 +39,9 @@ public class Puzzle_script : MonoBehaviour
 
     public virtual void TryOpenPuzzle()
     {
+        Debug.Log("TryOpenPuzzle called");
         if (playerInRange && !puzzleActive)
+            Debug.Log("Condition met and OpenPuzzle called");
             OpenPuzzle();
     }
 

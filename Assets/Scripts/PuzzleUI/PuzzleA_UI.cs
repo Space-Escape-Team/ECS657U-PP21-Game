@@ -9,8 +9,8 @@ public class PuzzleA_UI : MonoBehaviour
     [SerializeField] private PuzzlePanel_script puzzlePanel;
     [SerializeField] private Transform leftPanel;
     [SerializeField] private Transform rightPanel;
-    [SerializeField] private Transform wiresParent;
-    [SerializeField] private LineRenderer wirePrefab;
+    [SerializeField] private RectTransform wiresParent;
+    [SerializeField] private RectTransform wirePrefab;
 
     private Controls controls;
     private bool puzzleActive = false;
@@ -101,17 +101,49 @@ public class PuzzleA_UI : MonoBehaviour
             }
         }
     }
+    private Vector2 WorldToLocalPoint(RectTransform parent, Vector3 worldPos)
+    {
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            parent,
+            RectTransformUtility.WorldToScreenPoint(null, worldPos),
+            null,
+            out Vector2 localPoint
+        );
+        return localPoint;
+    }
+
+    private Vector2 GetLocalPosition(RectTransform parent, RectTransform child)
+    {
+        // Convert child world position to local position relative to parent
+        Vector2 localPos;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            parent,
+            RectTransformUtility.WorldToScreenPoint(null, child.position),
+            null, // camera null is fine for Screen Space Overlay
+            out localPos
+        );
+        return localPos;
+    }
 
     private void ConnectNodes(Image left, Image right)
     {
+        // New method to use image instead of line renderer
+        if (left == null || right == null || wiresParent == null)
+            return;
+
         connections.Add((left, right));
 
-        LineRenderer wire = Instantiate(wirePrefab, wiresParent);
-        wire.positionCount = 2;
-        wire.SetPosition(0, left.transform.position);
-        wire.SetPosition(1, right.transform.position);
-        wire.startWidth = 0.05f;
-        wire.endWidth = 0.05f;
+        RectTransform wire = Instantiate(wirePrefab, wiresParent);
+        wire.SetAsLastSibling(); // Pin to top of screen
+
+        Vector2 start = GetLocalPosition(wiresParent, left.rectTransform);
+        Vector2 end = GetLocalPosition(wiresParent, right.rectTransform);
+
+        Vector2 diff = end - start;
+        wire.anchoredPosition = start;
+        wire.sizeDelta = new Vector2(diff.magnitude, 5f);
+        float angle = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
+        wire.rotation = Quaternion.Euler(0, 0, angle);
     }
 
     private bool CheckIfSolved()
