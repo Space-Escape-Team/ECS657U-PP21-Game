@@ -2617,8 +2617,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   orientation: {fileID: 188824213}
   lookAction: {fileID: 7993518037987414578, guid: 8dcc6a318ec0ec6409f2446ba1eb207c, type: 3}
-  xSens: 250
-  ySens: 250
+  xSens: 45
+  ySens: 30
 --- !u!20 &1667988458
 Camera:
   m_ObjectHideFlags: 0
