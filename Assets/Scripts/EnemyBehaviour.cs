@@ -50,6 +50,10 @@ public class EnemyBehaviour : MonoBehaviour
         else
         {
             timeSinceLastSeen += Time.deltaTime;
+<<<<<<< Updated upstream:Assets/Scripts/EnemyBehaviour.cs
+=======
+            Debug.Log(timeSinceLastSeen);
+>>>>>>> Stashed changes:Assets/Scripts/Enemy/EnemyBehaviour.cs
         }
 
         if (animator != null)
