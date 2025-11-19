@@ -34,8 +34,8 @@ public class FirstPersonCameraController : MonoBehaviour
         yRotation += xDir;
         xRotation -= yDir;
 
-        // Prevent you from looking up or down more than 90 degrees as to not break your neck
-        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+        // Prevent you from looking too far up to break or neck or too far down to notice missing body
+        xRotation = Mathf.Clamp(xRotation, -90f, 63f);
 
         transform.rotation = Quaternion.Euler(xRotation, yRotation, 0); // Rotate camera along both axes
         orientation.transform.rotation = Quaternion.Euler(0, yRotation, 0); // Rotate player along y axis
