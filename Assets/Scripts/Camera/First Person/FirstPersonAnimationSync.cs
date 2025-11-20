@@ -12,7 +12,5 @@ public class FirstPersonAnimationSync : MonoBehaviour
         firstPersonArmsAnimator.SetBool("IsMoving", fullBodyAnimator.GetBool("IsMoving"));
         firstPersonArmsAnimator.SetFloat("Forward", fullBodyAnimator.GetFloat("Forward"));
         firstPersonArmsAnimator.SetFloat("Strafe", fullBodyAnimator.GetFloat("Strafe"));
-
-        Debug.Log($"FPS Arms - MoveSpeed: {firstPersonArmsAnimator.GetFloat("Speed")}, IsMoving: {firstPersonArmsAnimator.GetBool("IsMoving")}");
     }
 }
