@@ -47,18 +47,28 @@ public class PlayerMovement : MonoBehaviour
         // Convert world space movement to local space for animation
         Vector3 localMove = transform.InverseTransformDirection(moveDirection);
 
-        // Set animation parameters
-        animator.SetFloat("Forward", localMove.z);
-        animator.SetFloat("Strafe", localMove.x);
+        // Implement damping to ensure animator values slowly change for smooth transitions within the blend tree
+        float damping = 10f;
+
+        float smoothForward = Mathf.Lerp(
+            animator.GetFloat("Forward"),
+            localMove.z,
+            Time.deltaTime * damping
+        );
+
+        float smoothStrafe = Mathf.Lerp(
+            animator.GetFloat("Strafe"),
+            localMove.x,
+            Time.deltaTime * damping
+        );
+
+        // Set animator parameters
+        animator.SetFloat("Forward", smoothForward);
+        animator.SetFloat("Strafe", smoothStrafe);
         animator.SetFloat("Speed", input.magnitude);
 
-        // For transitions
         bool isMoving = input.magnitude > 0.2f;
         animator.SetBool("IsMoving", isMoving);
-
-        Debug.Log($"Input magnitude: {input.magnitude}");
-        Debug.Log($"IsMoving: {isMoving}");
-        Debug.Log($"Forward: {localMove.z}, Strafe: {localMove.x}");
     }
     private void FixedUpdate()
     {

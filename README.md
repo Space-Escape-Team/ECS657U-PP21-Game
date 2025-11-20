@@ -2,7 +2,7 @@
 Louis, Rachel, Tunji, Shaan
 
 Space Puzzler:
-WARNING! You're slowly running out of oxygen! Solve puzzles to unlock areas! Dodge and outmanouvre enemies! A thrilling escape!
+WARNING! You're slowly running out of oxygen! Solve puzzles to unlock areas! Dodge and outmanoeuvre enemies! A thrilling escape!
 
 Controls: 
 WASD to move.
