@@ -4,13 +4,14 @@ using System.Security.Cryptography;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
+using UnityEngine.InputSystem.Interactions;
 using UnityEngine.Rendering;
 using UnityEngine.Windows;
 
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Configurables")]
-    public float moveSpeed; // Default walk speed
+    public float moveSpeed = 3f; // Default walk speed
     public float cameraTransitionSpeed = 5f;
 
     [Header("References")]
@@ -24,11 +25,12 @@ public class PlayerMovement : MonoBehaviour
     private Vector3 moveDirection;
     private Vector2 input;
     private bool isCrouching = false;
+    private bool isProne = false;
     private float currentSpeed; // Influenced by running, crouching, crawling
 
     private Vector3 standPos = new (0.0f, 1.43f, 0.22f);
     private Vector3 crouchPos = new (0.1f, 0.95f, 0.37f);
-    private Vector3 crawlPos = new(0.0356f, 0.037f, 0.452f);
+    private Vector3 pronePos = new(0.0356f, 0.037f, 0.452f);
 
     // Start is called before the first frame update
     //
@@ -42,12 +44,28 @@ public class PlayerMovement : MonoBehaviour
         if (move != null && move.action != null)
             move.action.Enable();
 
+        if (crouch != null && crouch.action != null)
+        {
+            crouch.action.Enable();
+            // Subscribe to the performed event
+            crouch.action.performed += OnCrouchPerformed;
+        }
+
         if (pov != null)
         {
             pov.localPosition = standPos;
         }
 
         currentSpeed = moveSpeed;
+    }
+
+    void OnDestroy()
+    {
+        // Unsubscribe from performed event (prevents memory leaks)
+        if (crouch != null && crouch.action != null)
+        {
+            crouch.action.performed -= OnCrouchPerformed;
+        }
     }
 
     // Update is called once per frame
@@ -66,7 +84,6 @@ public class PlayerMovement : MonoBehaviour
     {
         if (animator == null) return;
         HandleLocomotion();
-        HandleCrouch();
     }
     private void HandleLocomotion()
     {
@@ -74,7 +91,7 @@ public class PlayerMovement : MonoBehaviour
         Vector3 localMove = transform.InverseTransformDirection(moveDirection);
 
         // Implement damping to ensure animator values slowly change for smooth transitions within the blend tree
-        float damping = 10f;
+        float damping = 6f;
 
         float smoothForward = Mathf.Lerp(
             animator.GetFloat("Forward"),
@@ -92,36 +109,101 @@ public class PlayerMovement : MonoBehaviour
         animator.SetFloat("Forward", smoothForward);
         animator.SetFloat("Strafe", smoothStrafe);
         animator.SetFloat("Speed", input.magnitude);
-
-        bool isMoving = input.magnitude > 0.2f;
-        animator.SetBool("IsMoving", isMoving);
-    }
-
-    private void HandleCrouch()
-    {
-        // Check if crouch button was pressed
-        if (crouch != null && crouch.action.triggered)
-        {
-            isCrouching = !isCrouching;
-
-            // Update animator parameter
-            animator.SetBool("IsCrouching", isCrouching);
-
-            // Adjust movement speed and POV position based on isCrouching value
-            currentSpeed = isCrouching ? moveSpeed / 2 : moveSpeed;
-        }
     }
 
     private void MovePOV()
     {
-        Vector3 newPosition = isCrouching ? crouchPos : standPos;
+        Vector3 newPosition;
+        if (isProne)
+            newPosition = pronePos;
+        else if (isCrouching)
+            newPosition = crouchPos;
+        else
+            newPosition = standPos;
 
-        // Smoothly interpolate towards the target position
+        // Smoothly move to new position
         pov.localPosition = Vector3.Lerp(
             pov.localPosition,
             newPosition,
             cameraTransitionSpeed * Time.deltaTime
         );
+    }
+    private void OnCrouchPerformed(InputAction.CallbackContext context)
+    {
+        // Check the interaction type
+        if (context.interaction is HoldInteraction)
+        {
+            ProcessCrouchHold();
+        }
+        else if (context.interaction is TapInteraction)
+        {
+            ProcessCrouchTap();
+        }
+        // Default to tap
+        else
+        {
+            ProcessCrouchTap();
+        }
+    }
+
+    private void ProcessCrouchTap()
+    {
+        // Prone -> Crouch
+        if (isProne)
+        {
+            isProne = false;
+            isCrouching = true;
+        }
+        // Crouch -> Stand
+        else if (isCrouching)
+        {
+            isCrouching = false;
+        }
+        // Stand -> Crouch
+        else
+        {
+            isCrouching = true;
+        }
+
+        HandleStance();
+    }
+
+    private void ProcessCrouchHold()
+    {
+        // Prone -> Crouch
+        if (isProne)
+        {
+            isProne = false;
+            isCrouching = true;
+        }
+        // Crouch -> Prone
+        else if (isCrouching)
+        {
+            isProne = true;
+            isCrouching = false;
+        }
+        // Stand -> Prone
+        else
+        {
+            isProne = true;
+            isCrouching = false;
+        }
+
+        HandleStance();
+    }
+    private void HandleStance()
+    {
+        // Update animator parameters
+        animator.SetBool("IsCrouching", isCrouching);
+        animator.SetBool("IsProne", isProne);
+
+        // Update movement speed
+        if (isProne)
+            currentSpeed = moveSpeed / 2.5f;
+        else if (isCrouching)
+            currentSpeed = moveSpeed / 2f;
+        else
+            currentSpeed = moveSpeed;
     }
     private void FixedUpdate()
     {
