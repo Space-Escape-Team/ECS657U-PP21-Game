@@ -28,6 +28,7 @@ public class PlayerMovement : MonoBehaviour
 
     private Vector3 standPos = new (0.0f, 1.43f, 0.22f);
     private Vector3 crouchPos = new (0.1f, 0.95f, 0.37f);
+    private Vector3 crawlPos = new(0.0356f, 0.037f, 0.452f);
 
     // Start is called before the first frame update
     //
