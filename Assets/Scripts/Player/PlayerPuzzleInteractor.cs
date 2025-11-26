@@ -69,7 +69,7 @@ public class PlayerPuzzleInteractor : MonoBehaviour
     {
         if (currentPuzzle != null)
             currentPuzzle.TryClosePuzzle();
-    }
+    } 
 
     private void ShowPrompt(string message)
     {

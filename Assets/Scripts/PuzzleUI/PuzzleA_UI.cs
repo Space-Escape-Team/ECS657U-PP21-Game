@@ -61,7 +61,7 @@ public class PuzzleA_UI : MonoBehaviour
         }
 
         // Shuffle right nodes for random placement
-        rightNodes.Shuffle();
+        ShuffleRightNodes();
 
         puzzleActive = true;
     }
@@ -114,37 +114,99 @@ public class PuzzleA_UI : MonoBehaviour
 
     private Vector2 GetLocalPosition(RectTransform parent, RectTransform child)
     {
-        // Convert child world position to local position relative to parent
-        Vector2 localPos;
+        //RectTransformUtility.ScreenPointToLocalPointInRectangle(
+        // parent, 
+        // RectTransformUtility.WorldToScreenPoint(null, child.position), 
+        //null, 
+        //out Vector2 localPos
+        //);
+        //return localPos;
+
+        // For Screen Space - Overlay canvas, we need a different approach
+        Vector2 localPoint;
+
+        // Convert the child's position directly to local position of the parent
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             parent,
-            RectTransformUtility.WorldToScreenPoint(null, child.position),
-            null, // camera null is fine for Screen Space Overlay
-            out localPos
+            child.position, // Already in screen space for UI elements
+            null, // null for Screen Space - Overlay
+            out localPoint
         );
-        return localPos;
+
+        return localPoint;
     }
+
+    //private void ConnectNodes(Image left, Image right)
+    //{
+    //    // New method to use image instead of line renderer
+    //  RectTransform wire = Instantiate(wirePrefab, wiresParent);
+    //
+    //Vector2 start = GetLocalPosition(wiresParent, left.rectTransform);
+    //Vector2 end = GetLocalPosition(wiresParent, right.rectTransform);
+
+    //Vector2 diff = end - start;
+
+    //wire.anchoredPosition = start;
+    //wire.sizeDelta = new Vector2(diff.magnitude, 5);
+
+    //float angle = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
+    // wire.localRotation = Quaternion.Euler(0, 0, angle);
+
+    //  connections.Add((left, right));
+
+    // }
 
     private void ConnectNodes(Image left, Image right)
     {
-        // New method to use image instead of line renderer
-        if (left == null || right == null || wiresParent == null)
-            return;
+        RectTransform wire = Instantiate(wirePrefab, wiresParent);
+
+        // Reset transform completely
+        wire.anchoredPosition = Vector2.zero;
+        wire.localRotation = Quaternion.identity;
+        wire.localScale = Vector3.one;
+
+        // Get the positions in the canvas space
+        Vector2 leftPos = GetAnchoredPositionInCanvas(left.rectTransform);
+        Vector2 rightPos = GetAnchoredPositionInCanvas(right.rectTransform);
+
+        // Convert to wiresParent local space
+        Vector2 leftLocal = ConvertToParentSpace(wiresParent, leftPos);
+        Vector2 rightLocal = ConvertToParentSpace(wiresParent, rightPos);
+
+        Vector2 diff = rightLocal - leftLocal;
+
+        // Position and rotate the wire
+        wire.anchoredPosition = leftLocal;
+        wire.sizeDelta = new Vector2(diff.magnitude, wire.sizeDelta.y);
+
+        float angle = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
+        wire.localRotation = Quaternion.Euler(0, 0, angle);
 
         connections.Add((left, right));
 
-        RectTransform wire = Instantiate(wirePrefab, wiresParent);
-        wire.SetAsLastSibling(); // Pin to top of screen
-
-        Vector2 start = GetLocalPosition(wiresParent, left.rectTransform);
-        Vector2 end = GetLocalPosition(wiresParent, right.rectTransform);
-
-        Vector2 diff = end - start;
-        wire.anchoredPosition = start;
-        wire.sizeDelta = new Vector2(diff.magnitude, 5f);
-        float angle = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
-        wire.rotation = Quaternion.Euler(0, 0, angle);
+        Debug.Log($"Left: {leftPos}, Right: {rightPos}, WirePos: {wire.anchoredPosition}");
     }
+
+    private Vector2 GetAnchoredPositionInCanvas(RectTransform rectTransform)
+    {
+        // This gets the position relative to its anchor in the canvas
+        return rectTransform.anchoredPosition;
+    }
+
+    private Vector2 ConvertToParentSpace(RectTransform parent, Vector2 anchoredPosition)
+    {
+        // For simplicity, return the anchored position directly
+        // This assumes wiresParent has anchors at (0,0) and (1,1)
+        return anchoredPosition;
+    }
+    private void ShuffleRightNodes()
+    {
+        rightNodes.Shuffle();
+
+        for (int i = 0; i < rightNodes.Count; i++)
+            rightNodes[i].transform.SetSiblingIndex(i);
+    }
+
 
     private bool CheckIfSolved()
     {
