@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 4522fe09bc8fb254dbc40ee99a38dc50
+guid: 396b1429580371b44a607cec75d53b03
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -31,11 +31,11 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
-      name: PlayerFwdCrawl
+      name: PlayerIdle
       takeName: mixamo.com
       internalID: -203655887218126122
       firstFrame: 0
-      lastFrame: 70
+      lastFrame: 59
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
