@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
 
+// Create a puzzle to match up same-coloured pairs of randomly generated left and right nodes
 public class PuzzleA_UI : MonoBehaviour
 {
     [Header("Puzzle References")]
@@ -15,11 +16,11 @@ public class PuzzleA_UI : MonoBehaviour
     private Controls controls;
     private bool puzzleActive = false;
 
-    private List<Image> leftNodes = new List<Image>();
-    private List<Image> rightNodes = new List<Image>();
+    private readonly List<Image> leftNodes = new ();
+    private readonly List<Image> rightNodes = new ();
 
     private Image selectedLeftNode;
-    private List<(Image left, Image right)> connections = new List<(Image, Image)>();
+    private readonly List<(Image left, Image right)> connections = new ();
 
     private void Awake()
     {
@@ -44,10 +45,12 @@ public class PuzzleA_UI : MonoBehaviour
 
     private void InitPuzzle()
     {
+        // Clear potential previous lists
         leftNodes.Clear();
         rightNodes.Clear();
         connections.Clear();
 
+        // Create images (based on coloured nodes in hierarchy) to act as the left and right nodes
         foreach (Transform child in leftPanel)
         {
             Image node = child.GetComponent<Image>();
@@ -63,6 +66,7 @@ public class PuzzleA_UI : MonoBehaviour
         // Shuffle right nodes for random placement
         ShuffleRightNodes();
 
+        // Leads to HandleClick() call
         puzzleActive = true;
     }
 
@@ -70,7 +74,7 @@ public class PuzzleA_UI : MonoBehaviour
     {
         if (!puzzleActive) return;
 
-        // Raycast into UI for clicked node
+        // Upon click, read mouse position and use Raycast to return UI elements under the cursor
         Vector2 mousePos = Mouse.current.position.ReadValue();
         var raycastResults = new List<UnityEngine.EventSystems.RaycastResult>();
         var eventData = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current)
@@ -81,17 +85,18 @@ public class PuzzleA_UI : MonoBehaviour
 
         foreach (var result in raycastResults)
         {
+            // Checks if an image exists in what was clicked
             Image clickedNode = result.gameObject.GetComponent<Image>();
-            if (clickedNode == null) continue;
+            if (clickedNode == null) continue; // Skips if no image
 
             if (leftNodes.Contains(clickedNode))
             {
-                selectedLeftNode = clickedNode; // select a left node
+                selectedLeftNode = clickedNode; // Clicked node is considered selected
                 return;
             }
+            // If clicked node is a right node and there is currently a selected left node, connect them and check solved status
             else if (rightNodes.Contains(clickedNode) && selectedLeftNode != null)
             {
-                // Connect left → right
                 ConnectNodes(selectedLeftNode, clickedNode);
                 selectedLeftNode = null;
 
@@ -101,112 +106,63 @@ public class PuzzleA_UI : MonoBehaviour
             }
         }
     }
-    private Vector2 WorldToLocalPoint(RectTransform parent, Vector3 worldPos)
+   
+    private Vector2 ScreenToLocal(RectTransform parent, Vector2 screenPos)
     {
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             parent,
-            RectTransformUtility.WorldToScreenPoint(null, worldPos),
-            null,
-            out Vector2 localPoint
-        );
-        return localPoint;
-    }
-
-    private Vector2 GetLocalPosition(RectTransform parent, RectTransform child)
-    {
-        //RectTransformUtility.ScreenPointToLocalPointInRectangle(
-        // parent, 
-        // RectTransformUtility.WorldToScreenPoint(null, child.position), 
-        //null, 
-        //out Vector2 localPos
-        //);
-        //return localPos;
-
-        // For Screen Space - Overlay canvas, we need a different approach
-        Vector2 localPoint;
-
-        // Convert the child's position directly to local position of the parent
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            parent,
-            child.position, // Already in screen space for UI elements
-            null, // null for Screen Space - Overlay
-            out localPoint
-        );
+            screenPos,
+            null,                 // canvas using Screen Space Overlay
+            out Vector2 localPoint);
 
         return localPoint;
     }
-
-    //private void ConnectNodes(Image left, Image right)
-    //{
-    //    // New method to use image instead of line renderer
-    //  RectTransform wire = Instantiate(wirePrefab, wiresParent);
-    //
-    //Vector2 start = GetLocalPosition(wiresParent, left.rectTransform);
-    //Vector2 end = GetLocalPosition(wiresParent, right.rectTransform);
-
-    //Vector2 diff = end - start;
-
-    //wire.anchoredPosition = start;
-    //wire.sizeDelta = new Vector2(diff.magnitude, 5);
-
-    //float angle = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
-    // wire.localRotation = Quaternion.Euler(0, 0, angle);
-
-    //  connections.Add((left, right));
-
-    // }
 
     private void ConnectNodes(Image left, Image right)
     {
         RectTransform wire = Instantiate(wirePrefab, wiresParent);
 
-        // Reset transform completely
-        wire.anchoredPosition = Vector2.zero;
-        wire.localRotation = Quaternion.identity;
-        wire.localScale = Vector3.one;
+        // Get screen space positions of the UI nodes
+        Vector2 leftScreen = GetNodeScreenCenter(left.rectTransform);
+        Vector2 rightScreen = GetNodeScreenCenter(right.rectTransform);
 
-        // Get the positions in the canvas space
-        Vector2 leftPos = GetAnchoredPositionInCanvas(left.rectTransform);
-        Vector2 rightPos = GetAnchoredPositionInCanvas(right.rectTransform);
+        // Find local versions of those positions
+        Vector2 leftLocal = ScreenToLocal(wiresParent, leftScreen);
+        Vector2 rightLocal = ScreenToLocal(wiresParent, rightScreen);
 
-        // Convert to wiresParent local space
-        Vector2 leftLocal = ConvertToParentSpace(wiresParent, leftPos);
-        Vector2 rightLocal = ConvertToParentSpace(wiresParent, rightPos);
+        Vector2 diff = rightLocal - leftLocal; // Vector between left and right nodes being connected
 
-        Vector2 diff = rightLocal - leftLocal;
+        // Set wire's width to the distance between nodes and height to appropriate thickness value
+        float thickness = 3f;
+        wire.sizeDelta = new Vector2(diff.magnitude, thickness);
 
-        // Position and rotate the wire
-        wire.anchoredPosition = leftLocal;
-        wire.sizeDelta = new Vector2(diff.magnitude, wire.sizeDelta.y);
+        wire.anchoredPosition = leftLocal; // Lines up anchor with left node (wire prefab pivot set to left-centre)
 
+        // Find angle of direction vector relative to x axis ( arctan(diff.x / diff.y) ) 
+        // Atan2: arctan, but handles divide by 0 case and covers -180 to 180 degrees
         float angle = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
-        wire.localRotation = Quaternion.Euler(0, 0, angle);
+        wire.localRotation = Quaternion.Euler(0, 0, angle); // Sets wire rotation to this angle to visually connect nodes correctly
 
         connections.Add((left, right));
-
-        Debug.Log($"Left: {leftPos}, Right: {rightPos}, WirePos: {wire.anchoredPosition}");
     }
 
-    private Vector2 GetAnchoredPositionInCanvas(RectTransform rectTransform)
+    private Vector2 GetNodeScreenCenter(RectTransform rect)
     {
-        // This gets the position relative to its anchor in the canvas
-        return rectTransform.anchoredPosition;
+        Vector3[] corners = new Vector3[4];
+        rect.GetWorldCorners(corners); // Returns world space co-ordinates of rect's corners
+
+        // Find centre point: average of bottom-left (index 0) and top-right (index 2)
+        return (corners[0] + corners[2]) * 0.5f;
     }
 
-    private Vector2 ConvertToParentSpace(RectTransform parent, Vector2 anchoredPosition)
-    {
-        // For simplicity, return the anchored position directly
-        // This assumes wiresParent has anchors at (0,0) and (1,1)
-        return anchoredPosition;
-    }
     private void ShuffleRightNodes()
     {
-        rightNodes.Shuffle();
+        rightNodes.Shuffle(); // Uses ListExtensions Shuffle() method
 
+        // Re order node indices to ensure the UI visually reflects the shuffle
         for (int i = 0; i < rightNodes.Count; i++)
             rightNodes[i].transform.SetSiblingIndex(i);
     }
-
 
     private bool CheckIfSolved()
     {
