@@ -170,6 +170,7 @@ public class EnemyBehaviour : MonoBehaviour
         {
             return false;
         }
+        // Decide sightAngle and sightDistance based on player stance
 
         Vector3 enemyCentre = transform.position + Vector3.up * 1f;
         Vector3 playerCentre = player.position + Vector3.up * 1f;

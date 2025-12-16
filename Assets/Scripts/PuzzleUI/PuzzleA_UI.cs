@@ -20,7 +20,7 @@ public class PuzzleA_UI : MonoBehaviour
     private readonly List<Image> rightNodes = new ();
 
     private Image selectedLeftNode;
-    private readonly List<(Image left, Image right)> connections = new ();
+    private readonly List<(Image left, Image right, RectTransform wire)> connections = new ();
 
     private void Awake()
     {
@@ -91,7 +91,12 @@ public class PuzzleA_UI : MonoBehaviour
 
             if (leftNodes.Contains(clickedNode))
             {
-                selectedLeftNode = clickedNode; // Clicked node is considered selected
+                if (selectedLeftNode == clickedNode)
+                {
+                    selectedLeftNode = null;
+                    return;
+                }
+                selectedLeftNode = clickedNode;
                 return;
             }
             // If clicked node is a right node and there is currently a selected left node, connect them and check solved status
@@ -120,6 +125,8 @@ public class PuzzleA_UI : MonoBehaviour
 
     private void ConnectNodes(Image left, Image right)
     {
+        RemoveConnectionFromLeft(left); // Only one connection per node
+
         RectTransform wire = Instantiate(wirePrefab, wiresParent);
 
         // Get screen space positions of the UI nodes
@@ -132,9 +139,8 @@ public class PuzzleA_UI : MonoBehaviour
 
         Vector2 diff = rightLocal - leftLocal; // Vector between left and right nodes being connected
 
-        // Set wire's width to the distance between nodes and height to appropriate thickness value
         float thickness = 3f;
-        wire.sizeDelta = new Vector2(diff.magnitude, thickness);
+        wire.sizeDelta = new Vector2(diff.magnitude, thickness); // Wire width: distance between nodes
 
         wire.anchoredPosition = leftLocal; // Lines up anchor with left node (wire prefab pivot set to left-centre)
 
@@ -143,7 +149,19 @@ public class PuzzleA_UI : MonoBehaviour
         float angle = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
         wire.localRotation = Quaternion.Euler(0, 0, angle); // Sets wire rotation to this angle to visually connect nodes correctly
 
-        connections.Add((left, right));
+        connections.Add((left, right, wire));     
+    }
+
+    private void RemoveConnectionFromLeft(Image left)
+    {
+        for (int i = connections.Count - 1; i >= 0; i--)
+        {
+            if (connections[i].left == left)
+            {
+                Destroy(connections[i].wire.gameObject);
+                connections.RemoveAt(i);
+            }
+        }
     }
 
     private Vector2 GetNodeScreenCenter(RectTransform rect)
