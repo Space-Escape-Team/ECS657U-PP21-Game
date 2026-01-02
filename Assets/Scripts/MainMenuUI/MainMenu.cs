@@ -1,17 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
-public class MainMenu : MonoBehaviour
+public class MainMenu : MonoBehaviour // the methods for the main menu
 {
     public void PlayGame ()
     {
-        //SceneManager.LoadScene(SceneManager.GetActiveScene().buildindex + 1); // Loads the next scene
+        Debug.Log("START PLEASE!"); // throws the given text into the debugger if successful
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1); // Loads the next scene, which should be the hub area.
     }
 
     public void QuitGame ()
     {
-        //application.Quit();
+        Debug.Log("QUIT PLEASE!"); // throws the given text into the debugger if successful
+        Application.Quit(); // closes the game
     }
 }
 
