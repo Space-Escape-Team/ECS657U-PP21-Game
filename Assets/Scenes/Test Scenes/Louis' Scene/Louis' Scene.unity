@@ -742,29 +742,52 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b094000d8be735a47b263bbae5cd71d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  brainType: 0
+  player: {fileID: 1503134408}
+  playerCamera: {fileID: 0}
   wanderRadius: 50
   wanderInterval: 10
   dwellMin: 3
   dwellMax: 5
-  player: {fileID: 1503134408}
-  sightDistance: 40
-  fieldOfView: 110
-  trackTime: 5
-  forgetTime: 15
-  closeAwarenessRadius: 4
-  searchLooks: 4
-  searchLookAngle: 60
+  destinationSampleRadius: 2
+  wanderSampleRadius: 10
   turnSpeed: 500
-  searchTurnSpeed: 240
-  searchPausePerLook: 0.25
-  visionBlockers:
+  animator: {fileID: 638247173}
+  runnerSightDistance: 50
+  runnerFieldOfView: 70
+  runnerTrackTime: 5
+  runnerForgetTime: 15
+  runnerCloseRetentionRadius: 10
+  runnerVisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  eyeHeight: 1
-  attackRange: 1.8
+  runnerEyeHeight: 1
+  runnerPlayerAimHeight: 1
+  searchLooks: 4
+  searchLookAngle: 110
+  searchTurnSpeed: 500
+  searchPausePerLook: 2
+  leaperAwarenessRadius: 50
+  leaperWaitAtLastKnownMin: 5
+  leaperWaitAtLastKnownMax: 10
+  leaperHopDistance: 5
+  leaperHopDuration: 0.4
+  leaperHopCooldown: 1
+  leaperHopArcHeight: 1
+  leaperArriveDistance: 1
+  leaperTurnSpeed: 900
+  leaperHopSampleRadius: 2
+  angelAwarenessRadius: 75
+  angelObserveMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  angelObserveEnemyAimHeight: 1
+  angelUnwatchedReturnDelay: 20
+  angelReturnSpeedMultiplier: 25
+  angelSpawnArriveDistance: 5
+  attackRange: 2
   attackDamage: 25
-  attackInterval: 1
-  animator: {fileID: 638247173}
+  attackInterval: 2
 --- !u!195 &483453034
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -829,7 +852,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
