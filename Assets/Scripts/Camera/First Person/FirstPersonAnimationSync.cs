@@ -12,5 +12,7 @@ public class FirstPersonAnimationSync : MonoBehaviour
         firstPersonArmsAnimator.SetBool("IsMoving", fullBodyAnimator.GetBool("IsMoving"));
         firstPersonArmsAnimator.SetFloat("Forward", fullBodyAnimator.GetFloat("Forward"));
         firstPersonArmsAnimator.SetFloat("Strafe", fullBodyAnimator.GetFloat("Strafe"));
+        firstPersonArmsAnimator.SetBool("IsCrouching", fullBodyAnimator.GetBool("IsCrouching"));
+        firstPersonArmsAnimator.SetBool("IsProne", fullBodyAnimator.GetBool("IsProne"));
     }
 }
