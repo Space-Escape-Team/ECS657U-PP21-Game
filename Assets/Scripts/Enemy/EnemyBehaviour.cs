@@ -80,7 +80,6 @@ public class EnemyBehaviour : MonoBehaviour
 
     [Header("Weeping Angel Freeze When Observed (LOS + on-screen)")]
     [SerializeField] private LayerMask angelObserveMask = ~0;
-    [SerializeField] private float angelObserveEnemyAimHeight = 1.0f;
 
     [Header("Weeping Angel Return Behaviour")]
     [Tooltip("If the angel is NOT watched and does NOT know where the player is, it will return to spawn after this many seconds.")]
@@ -274,7 +273,7 @@ public class EnemyBehaviour : MonoBehaviour
                 agent.stoppingDistance = Mathf.Max(attackRange, 1f);
                 break;
             case RunnerState.Investigate:
-                agent.stoppingDistance = 0.25f;
+                agent.stoppingDistance = 0f;
                 break;
             case RunnerState.Search:
                 agent.ResetPath();
@@ -438,11 +437,11 @@ public class EnemyBehaviour : MonoBehaviour
 
             switch (leaperState)
             {
-                case LeaperState.Wander: yield return Leaper_Wander(); break;
-                case LeaperState.Chase: yield return Leaper_Chase(); break;
-                case LeaperState.GoToLastKnown: yield return Leaper_GoToLastKnown(); break;
-                case LeaperState.WaitAtLastKnown: yield return Leaper_WaitAtLastKnown(); break;
-                case LeaperState.ReturnToSpawn: yield return Leaper_ReturnToSpawn(); break;
+                case LeaperState.Wander: agent.stoppingDistance = 0f; yield return Leaper_Wander(); break;
+                case LeaperState.Chase: yield return Leaper_Chase(); agent.stoppingDistance = Mathf.Max(attackRange, 1f); break;
+                case LeaperState.GoToLastKnown: yield return Leaper_GoToLastKnown(); agent.stoppingDistance = 0f; break;
+                case LeaperState.WaitAtLastKnown: yield return Leaper_WaitAtLastKnown(); agent.stoppingDistance = 0f; break;
+                case LeaperState.ReturnToSpawn: yield return Leaper_ReturnToSpawn(); agent.stoppingDistance = 0f; break;
             }
             yield return null;
         }
@@ -466,7 +465,7 @@ public class EnemyBehaviour : MonoBehaviour
                 break;
 
             yield return Leaper_HopToward(roam.Value);
-            timer += (leaperHopDuration + leaperHopCooldown);
+            timer += leaperHopDuration + leaperHopCooldown;
         }
 
         float dwellFor = Random.Range(dwellMin, dwellMax);
@@ -655,6 +654,7 @@ public class EnemyBehaviour : MonoBehaviour
     {
         while (angelState == AngelState.Chase)
         {
+            agent.stoppingDistance = Mathf.Max(attackRange, 1f);
             if (!simpleAware || player == null)
             {
                 AngelFreezeNow();
@@ -672,7 +672,6 @@ public class EnemyBehaviour : MonoBehaviour
 
             RestoreAngelMove();
             agent.isStopped = false;
-            agent.stoppingDistance = Mathf.Max(0.25f, 1.0f);
             agent.SetDestinationKeepOnNavmesh(player.position, destinationSampleRadius);
             FaceToward(player.position, turnSpeed);
 
@@ -712,12 +711,14 @@ public class EnemyBehaviour : MonoBehaviour
         {
             if (simpleAware) 
             { 
-                RestoreAngelMove(); angelState = AngelState.Chase; 
+                RestoreAngelMove(); 
+                angelState = AngelState.Chase; 
                 yield break; 
             }
 
             if (IsObservedByPlayer_CameraConeLOS())
             {
+                RestoreAngelMove();
                 AngelFreezeNow();
                 yield return null;
                 continue;
@@ -725,7 +726,7 @@ public class EnemyBehaviour : MonoBehaviour
 
             ApplyAngelReturnMove();
             agent.isStopped = false;
-            agent.stoppingDistance = 0.25f;
+            agent.stoppingDistance = 0f;
             agent.SetDestinationKeepOnNavmesh(spawnPoint, destinationSampleRadius);
 
             if (Vector3.Distance(transform.position, spawnPoint) <= angelSpawnArriveDistance)
@@ -744,7 +745,9 @@ public class EnemyBehaviour : MonoBehaviour
     {
         agent.isStopped = true;
         agent.ResetPath();
-        RestoreAngelMove();
+
+        agent.velocity = Vector3.zero;
+        agent.angularSpeed = 0f;
     }
 
     private void ApplyAngelReturnMove()
@@ -757,30 +760,61 @@ public class EnemyBehaviour : MonoBehaviour
     {
         agent.speed = angelBaseSpeed;
         agent.acceleration = angelBaseAccel;
+        agent.angularSpeed = turnSpeed;
     }
 
     private bool IsObservedByPlayer_CameraConeLOS()
     {
         Camera cam = playerCamera != null ? playerCamera : Camera.main;
         if (cam == null)
+        {
+            Debug.Log("No camera");
             return false;
+        }
 
-        Vector3 enemyAim = transform.position + Vector3.up * angelObserveEnemyAimHeight;
+        Renderer r = GetComponentInChildren<Renderer>();
+        if (r == null)
+        {
+            Debug.Log("No renderer");
+            return false;
+        }
+
+        Vector3 enemyAim = r.bounds.center;
 
         Vector3 vp = cam.WorldToViewportPoint(enemyAim);
-        if (vp.z <= 0f) return false;
-        if (vp.x < 0f || vp.x > 1f || vp.y < 0f || vp.y > 1f) return false;
+
+        if (vp.z <= 0f)
+        {
+            Debug.Log("Behind camera");
+            return false;
+        }
+
+        if (vp.x < 0f || vp.x > 1f || vp.y < 0f || vp.y > 1f)
+        {
+            Debug.Log("Outside viewport");
+            return false;
+        }
 
         Vector3 origin = cam.transform.position;
         Vector3 toEnemy = enemyAim - origin;
         float dist = toEnemy.magnitude;
-        if (dist <= 0.0001f) return true;
+
+        if (dist <= 0.001f)
+        {
+            Debug.Log("Looking at enemy");
+            return true;
+        }
 
         Vector3 dir = toEnemy / dist;
 
         if (Physics.Raycast(origin, dir, out RaycastHit hit, dist + 0.05f, angelObserveMask, QueryTriggerInteraction.Ignore))
-            return hit.transform.IsChildOf(transform);
+        {
+            bool seen = hit.transform.root == transform;
+            Debug.Log("LOS hit: " + hit.transform.name + "  Seen=" + seen);
+            return seen;
+        }
 
+        Debug.Log("Return false");
         return false;
     }
 
