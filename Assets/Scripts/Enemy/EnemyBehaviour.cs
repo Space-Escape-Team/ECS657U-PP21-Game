@@ -768,40 +768,61 @@ public class EnemyBehaviour : MonoBehaviour
         Camera cam = playerCamera != null ? playerCamera : Camera.main;
         if (cam == null)
         {
-            Debug.Log("No camera");
             return false;
         }
 
         Renderer r = GetComponentInChildren<Renderer>();
         if (r == null)
         {
-            Debug.Log("No renderer");
             return false;
         }
 
-        Vector3 enemyAim = r.bounds.center;
+        Bounds bounds = r.bounds;
 
-        Vector3 vp = cam.WorldToViewportPoint(enemyAim);
+        // Sample corners + face centers (14 points)
+        Vector3[] points = new Vector3[14];
+        // corners
+        points[0] = bounds.min;
+        points[1] = new Vector3(bounds.min.x, bounds.min.y, bounds.max.z);
+        points[2] = new Vector3(bounds.min.x, bounds.max.y, bounds.min.z);
+        points[3] = new Vector3(bounds.min.x, bounds.max.y, bounds.max.z);
+        points[4] = new Vector3(bounds.max.x, bounds.min.y, bounds.min.z);
+        points[5] = new Vector3(bounds.max.x, bounds.min.y, bounds.max.z);
+        points[6] = new Vector3(bounds.max.x, bounds.max.y, bounds.min.z);
+        points[7] = bounds.max;
+        // face centers
+        points[8]  = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
+        points[9]  = new Vector3(bounds.center.x, bounds.max.y, bounds.center.z);
+        points[10] = new Vector3(bounds.min.x, bounds.center.y, bounds.center.z);
+        points[11] = new Vector3(bounds.max.x, bounds.center.y, bounds.center.z);
+        points[12] = new Vector3(bounds.center.x, bounds.center.y, bounds.min.z);
+        points[13] = new Vector3(bounds.center.x, bounds.center.y, bounds.max.z);
 
-        if (vp.z <= 0f)
+        // Enemy is considered observed if ANY point is visible in front of the camera
+        bool anyOnScreen = false;
+        foreach (var point in points)
         {
-            Debug.Log("Behind camera");
-            return false;
+            Vector3 vp = cam.WorldToViewportPoint(point);
+            if (vp.z > 0f && vp.x >= 0f && vp.x <= 1f && vp.y >= 0f && vp.y <= 1f)
+            {
+                anyOnScreen = true;
+                break;
+            }
         }
 
-        if (vp.x < 0f || vp.x > 1f || vp.y < 0f || vp.y > 1f)
+        if (!anyOnScreen)
         {
-            Debug.Log("Outside viewport");
             return false;
         }
 
+        // Raycast for line-of-sight
+        Vector3 enemyAim = bounds.center;
         Vector3 origin = cam.transform.position;
         Vector3 toEnemy = enemyAim - origin;
         float dist = toEnemy.magnitude;
 
         if (dist <= 0.001f)
         {
-            Debug.Log("Looking at enemy");
             return true;
         }
 
@@ -810,11 +831,9 @@ public class EnemyBehaviour : MonoBehaviour
         if (Physics.Raycast(origin, dir, out RaycastHit hit, dist + 0.05f, angelObserveMask, QueryTriggerInteraction.Ignore))
         {
             bool seen = hit.transform.root == transform;
-            Debug.Log("LOS hit: " + hit.transform.name + "  Seen=" + seen);
             return seen;
         }
 
-        Debug.Log("Return false");
         return false;
     }
 
