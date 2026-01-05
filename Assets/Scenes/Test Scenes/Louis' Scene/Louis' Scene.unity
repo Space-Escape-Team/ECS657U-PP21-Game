@@ -742,9 +742,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b094000d8be735a47b263bbae5cd71d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  brainType: 0
+  brainType: 2
   player: {fileID: 1503134408}
-  playerCamera: {fileID: 0}
+  playerCamera: {fileID: 452770583}
   wanderRadius: 50
   wanderInterval: 10
   dwellMin: 3
@@ -781,7 +781,6 @@ MonoBehaviour:
   angelObserveMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  angelObserveEnemyAimHeight: 1
   angelUnwatchedReturnDelay: 20
   angelReturnSpeedMultiplier: 25
   angelSpawnArriveDistance: 5
@@ -852,8 +851,8 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 1
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 1, y: 2, z: 1}
