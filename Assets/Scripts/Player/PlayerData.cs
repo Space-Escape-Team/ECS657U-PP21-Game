@@ -5,14 +5,11 @@ using UnityEngine;
 [System.Serializable]
 public class PlayerData
 {
-    
-    public int health;
     public float[] position;
     public int times_completed;
 
     public PlayerData (Player player)
     {
-        health = player.health;
 
         position = new float[3];
         position[0] = player.transform.position.x;
