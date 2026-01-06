@@ -34,3 +34,4 @@ TriForge Assets' Fantasy Forest Environment: https://assetstore.unity.com/packag
 Sickhead Games' Sci-Fi Construction: https://assetstore.unity.com/packages/3d/environments/sci-fi/sci-fi-construction-kit-modular-159280<br />
 FlexUnit's Cartoon Low-Poly Spaceship: https://assetstore.unity.com/packages/3d/vehicles/space/cartoon-low-poly-spaceship-287099<br />
 Chromisu's Handpainted Grass & Ground Textures: https://assetstore.unity.com/packages/2d/textures-materials/nature/handpainted-grass-ground-textures-187634<br />
+Lamoot Game Art's https://assetstore.unity.com/packages/3d/environments/mushroom-flora-pack-30024<br />
