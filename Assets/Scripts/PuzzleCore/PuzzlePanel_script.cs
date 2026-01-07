@@ -2,17 +2,23 @@ using UnityEngine;
 
 public class PuzzlePanel_script : Puzzle_script
 {
+    [Header("Completion Flag")]
     [SerializeField] private bool isCompleted = false;
 
-    public bool PuzzleCompleted
+    public bool Completed => isCompleted;
+
+    public override void TryOpenPuzzle()
     {
-        get => isCompleted;
-        private set => isCompleted = value;
+        if (isCompleted) return; // optional lock-out after solved
+        base.TryOpenPuzzle();
     }
 
     public void MarkCompleted()
     {
-        PuzzleCompleted = true;
-        ClosePuzzle();
+        if (isCompleted) return;
+        isCompleted = true;
+
+        // closing will also reset UI state (per spec)
+        TryClosePuzzle();
     }
 }
