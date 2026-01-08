@@ -11,27 +11,45 @@ public class RunnerEnemy : MonoBehaviour
     [SerializeField] private Transform player;
 
     [Header("Wander")]
-    [SerializeField] private float wanderRadius = 50f;
-    [SerializeField] private float wanderInterval = 15f;
-    [SerializeField] private float dwellMin = 5f;
-    [SerializeField] private float dwellMax = 10f;
+    private float wanderRadius;
+    [SerializeField] private float minWanderRadius = 25f;
+    [SerializeField] private float maxWanderRadius = 75f;
+
+    private float wanderInterval;
+    [SerializeField] private float minWanderInterval = 10f;
+    [SerializeField] private float maxWanderInterval = 30f;
+
+    private float dwellTime;
+    [SerializeField] private float dwellMin = 2f;
+    [SerializeField] private float dwellMax = 15f;
 
     [Header("NavMesh Sampling")]
     [SerializeField] private float destinationSampleRadius = 2.0f;
     [SerializeField] private float wanderSampleRadius = 10f;
 
     [Header("Speed")]
-    [SerializeField] private float moveSpeed = 10f;
-    [SerializeField] private float turnSpeed = 900f;
+    private float moveSpeed;
+    [SerializeField] private float minMoveSpeed = 10f;
+    [SerializeField] private float maxMoveSpeed = 20f;
+    [SerializeField] private float turnSpeed = 1000f;
 
     [Header("Animation")]
     [SerializeField] private Animator animator;
 
     [Header("Perception")]
-    [SerializeField] private float sightDistance = 40f;
+    private float sightDistance;
+    [SerializeField] private float minSightDistance = 25f;
+    [SerializeField] private float maxSightDistance = 75f;
     [SerializeField, Range(0f, 180f)] private float fieldOfView = 110f;
-    [SerializeField] private float trackTime = 5f;
-    [SerializeField] private float forgetTime = 15f;
+
+    private float trackTime;
+    [SerializeField] private float minTrackTime = 2f;
+    [SerializeField] private float maxTrackTime = 10f;
+
+    private float forgetTime;
+    [SerializeField] private float minForgetTime = 15f;
+    [SerializeField] private float maxForgetTime = 45f;
+
     [SerializeField] private float closeRetentionRadius = 10f;
     [SerializeField] private LayerMask visionMask = ~0;
     [SerializeField] private float eyeHeight = 1.0f;
@@ -45,7 +63,7 @@ public class RunnerEnemy : MonoBehaviour
 
     [Header("Combat")]
     [SerializeField] private float attackRange = 5f;
-    [SerializeField] private int attackDamage = 25;
+    [SerializeField] private int attackDamage;
     [SerializeField] private float attackInterval = 3f;
 
     private Vector3 spawnPoint;
@@ -63,21 +81,32 @@ public class RunnerEnemy : MonoBehaviour
     private PlayerHealth playerHealth;
     private float lastAttackTime = -Mathf.Infinity;
 
+    // Difficulty
+    [SerializeField] private GameDifficulty.Difficulty difficulty;
+
+    // States
+    private enum State {Wander, Chase, Investigate, Search}
+    private State state = State.Wander;
+
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         agent.updateRotation = false;
-        agent.speed = moveSpeed;
 
         spawnPoint = transform.position;
-
-        if (player != null)
-            playerHealth = player.GetComponent<PlayerHealth>();
     }
 
     private void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player").transform;
+
+        if (player != null)
+        {
+            playerHealth = player.GetComponent<PlayerHealth>();
+            difficulty = player.GetComponent<GameDifficulty>().difficulty;
+            AssignDifficultyStats();
+        }
+
         StartCoroutine(StateLoop());
     }
 
@@ -87,6 +116,47 @@ public class RunnerEnemy : MonoBehaviour
         UpdateMovementFacing();
         UpdateAnimation();
         TryAttackIfValid();
+    }
+
+    private void AssignDifficultyStats()
+    {
+        // Random stats are chosen from the lower half of the bounds
+        if (difficulty == GameDifficulty.Difficulty.Story)
+        {
+            forgetTime = Random.Range(minForgetTime, (minForgetTime + maxForgetTime) / 2);
+            moveSpeed = Random.Range(minMoveSpeed, (minMoveSpeed + maxMoveSpeed) / 2);
+            sightDistance = Random.Range(minSightDistance, (minSightDistance + maxSightDistance) / 2);
+            trackTime = Random.Range(minTrackTime, (minTrackTime + maxTrackTime) / 2);
+            wanderInterval = Random.Range(minWanderInterval, (minWanderInterval + maxWanderInterval) / 2);
+            wanderRadius = Random.Range(minWanderRadius, (minWanderRadius + maxWanderRadius) / 2);
+            dwellTime = Random.Range(dwellMin, (dwellMin + dwellMax) / 2);
+            attackDamage = 15;
+        }
+        // Random stats are chosen from the upper half of the bounds
+        else if (difficulty == GameDifficulty.Difficulty.Challenge)
+        {
+            forgetTime = Random.Range((minForgetTime + maxForgetTime) / 2, maxForgetTime);
+            moveSpeed = Random.Range((minMoveSpeed + maxMoveSpeed) / 2, maxMoveSpeed);
+            sightDistance = Random.Range((minSightDistance + maxSightDistance) / 2, maxSightDistance);
+            trackTime = Random.Range((minTrackTime + maxTrackTime) / 2, maxTrackTime);
+            wanderInterval = Random.Range((minWanderInterval + maxWanderInterval) / 2, maxWanderInterval);
+            wanderRadius = Random.Range((minWanderRadius + maxWanderRadius) / 2, maxWanderRadius);
+            dwellTime = Random.Range((dwellMin + dwellMax) / 2, dwellMax);
+            attackDamage = 25;
+        }
+        // Random stats can be any value within the bounds
+        else
+        {
+            forgetTime = Random.Range(minForgetTime, maxForgetTime);
+            moveSpeed = Random.Range(minMoveSpeed, maxMoveSpeed);
+            sightDistance = Random.Range(minSightDistance, maxSightDistance);
+            trackTime = Random.Range(minTrackTime, maxTrackTime);
+            wanderInterval = Random.Range(minWanderInterval, maxWanderInterval);
+            wanderRadius = Random.Range(minWanderRadius, maxWanderRadius);
+            dwellTime = Random.Range(dwellMin, dwellMax);
+            attackDamage = 20;
+        }
+        agent.speed = moveSpeed;
     }
 
     private void UpdatePerception()
@@ -100,6 +170,7 @@ public class RunnerEnemy : MonoBehaviour
 
         float dt = Time.deltaTime;
 
+        // Enemy have an unobstructed view of the player to detect them
         hasLOS = CanSeePlayer(player);
 
         if (hasLOS)
@@ -109,6 +180,7 @@ public class RunnerEnemy : MonoBehaviour
 
         float dist = Vector3.Distance(transform.position, player.position);
 
+        // Once aware, will know the players exact location when close or for a short time after losing sight
         bool closeRetention = hasEverDetected && dist <= closeRetentionRadius;
         bool postLOSTracking = hasEverDetected && !hasLOS && timeSinceLostLOS <= trackTime;
 
@@ -128,17 +200,14 @@ public class RunnerEnemy : MonoBehaviour
         hadLOSLastFrame = hasLOS;
     }
 
-    // Enemy behaviour
-    private enum State { Patrol, Chase, Investigate, Search }
-    private State state = State.Patrol;
-
+    // Simple state machine controls behaviour
     private IEnumerator StateLoop()
     {
         while (true)
         {
             switch (state)
             {
-                case State.Patrol: yield return Patrol(); break;
+                case State.Wander: yield return Wander(); break;
                 case State.Chase: yield return Chase(); break;
                 case State.Investigate: yield return Investigate(); break;
                 case State.Search: yield return Search(); break;
@@ -156,7 +225,7 @@ public class RunnerEnemy : MonoBehaviour
 
         switch (state)
         {
-            case State.Patrol:
+            case State.Wander:
                 agent.stoppingDistance = 0f;
                 break;
             case State.Chase:
@@ -172,7 +241,8 @@ public class RunnerEnemy : MonoBehaviour
         }
     }
 
-    private IEnumerator Patrol()
+    // Enemy wanders randomly within its wander radius
+    private IEnumerator Wander()
     {
         if (hasExactAwareness)
         {
@@ -205,6 +275,7 @@ public class RunnerEnemy : MonoBehaviour
         }
     }
 
+    // Enemy has spotted player and is pursuing them
     private IEnumerator Chase()
     {
         while (state == State.Chase)
@@ -225,11 +296,12 @@ public class RunnerEnemy : MonoBehaviour
                 yield break;
             }
 
-            SetState(State.Patrol);
+            SetState(State.Wander);
             yield break;
         }
     }
 
+    // Enemy has lost sight of player so goes to the last know player location
     private IEnumerator Investigate()
     {
         if (hasExactAwareness)
@@ -244,13 +316,14 @@ public class RunnerEnemy : MonoBehaviour
         while (state == State.Investigate)
         {
             if (hasExactAwareness) { SetState(State.Chase); yield break; }
-            if (timeSinceLastExact >= forgetTime) { SetState(State.Patrol); yield break; }
+            if (timeSinceLastExact >= forgetTime) { SetState(State.Wander); yield break; }
 
             if (HasReachedDestination()) { SetState(State.Search); yield break; }
             yield return null;
         }
     }
 
+    // Enemy is at last known player position so looks around to find player
     private IEnumerator Search()
     {
         Quaternion startRotation = transform.rotation;
@@ -258,7 +331,7 @@ public class RunnerEnemy : MonoBehaviour
         for (int i = 0; i < searchLooks; i++)
         {
             if (hasExactAwareness) { SetState(State.Chase); yield break; }
-            if (timeSinceLastExact >= forgetTime) { SetState(State.Patrol); yield break; }
+            if (timeSinceLastExact >= forgetTime) { SetState(State.Wander); yield break; }
 
             float yaw = GetAlternatingYawOffset(i, searchLookAngle);
             Quaternion targetRotation = startRotation * Quaternion.Euler(0f, yaw, 0f);
@@ -279,9 +352,10 @@ public class RunnerEnemy : MonoBehaviour
             }
         }
 
-        SetState(timeSinceLastExact < forgetTime ? State.Investigate : State.Patrol);
+        SetState(timeSinceLastExact < forgetTime ? State.Investigate : State.Wander);
     }
 
+    // Makes the enemy face the direction of movement
     private void UpdateMovementFacing()
     {
         if (agent.isStopped || agent.velocity.sqrMagnitude <= 0.01f)
@@ -301,9 +375,11 @@ public class RunnerEnemy : MonoBehaviour
         if (animator == null)
             return;
 
+        // Only animate a run cycle when moving
         animator.SetBool("IsRunning", agent.velocity.magnitude >= 0.5f);
     }
 
+    // Multiple checks for whether the player can be successfully attacked. If possible, do so
     private void TryAttackIfValid()
     {
         if (player == null || !hasExactAwareness || !hasLOS)
@@ -339,12 +415,14 @@ public class RunnerEnemy : MonoBehaviour
         if (distance > sightDistance)
             return false;
 
+        // Can only see player within the enemies field of view
         float angle = Vector3.Angle(transform.forward, toPlayer);
         if (angle > fieldOfView * 0.5f)
             return false;
 
         Vector3 dir = toPlayer / Mathf.Max(distance, 0.0001f);
 
+        // Raycast determines if an object is obstructing the view of the player
         if (Physics.Raycast(enemyEye, dir, out RaycastHit hit, sightDistance, visionMask, QueryTriggerInteraction.Ignore))
             return hit.transform.IsChildOf(playerTransform);
 
@@ -374,6 +452,7 @@ public class RunnerEnemy : MonoBehaviour
         return null;
     }
 
+    // Generates alternating angles for the search behaviour where the enemy looks side to side
     private static float GetAlternatingYawOffset(int index, float stepAngle)
     {
         if (index == 0)
