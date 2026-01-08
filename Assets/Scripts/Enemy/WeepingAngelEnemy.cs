@@ -16,50 +16,55 @@ public class WeepingAngelEnemy : MonoBehaviour
     [Header("NavMesh Sampling")]
     [SerializeField] private float destinationSampleRadius = 2.0f;
 
-    [Header("Rotation")]
-    [SerializeField] private float turnSpeed = 900f;
+    [Header("Movement")]
+    private float baseSpeed;
+    [SerializeField] private float minBaseSpeed = 15f;
+    [SerializeField] private float maxBaseSpeed = 30f;
+
+    [SerializeField] private float turnSpeed = 10000f;
 
     [Header("Animation")]
     [SerializeField] private Animator animator;
 
+    [Header("Awareness")]
+    private float awarenessRadius;
+    [SerializeField] private float minAwarenessRadius = 25f;
+    [SerializeField] private float maxAwarenessRadius = 60f;
 
+    [Header("Observation (LOS + On-screen)")]
+    [SerializeField] private LayerMask observeMask = ~0;
 
-    [Header("Weeping Angel Perception")]
-    [SerializeField] private float angelAwarenessRadius = 50f;
+    [Header("Return Behaviour")]
+    private float returnDelay;
+    [SerializeField] private float minReturnDelay = 10f;
+    [SerializeField] private float maxReturnDelay = 30f;
 
-    [Header("Weeping Angel Freeze When Observed (LOS + on-screen)")]
-    [SerializeField] private LayerMask angelObserveMask = ~0;
-
-    [Header("Weeping Angel Return Behaviour")]
-    [Tooltip("If the angel is NOT watched and does NOT know where the player is, it will return to spawn after this many seconds.")]
-    [SerializeField] private float angelUnwatchedReturnDelay = 20f;
-
-    [Tooltip("Speed multiplier used only while returning to spawn (when not watched).")]
-    [SerializeField] private float angelReturnSpeedMultiplier = 2f;
-
-    [Tooltip("How close is considered 'at spawn'.")]
-    [SerializeField] private float angelSpawnArriveDistance = 5f;
-
+    [SerializeField] private float returnSpeedMultiplier = 2f;
+    [SerializeField] private float spawnArriveDistance = 5f;
 
     [Header("Combat")]
     [SerializeField] private float attackRange = 5f;
-    [SerializeField] private int attackDamage = 25;
     [SerializeField] private float attackInterval = 3f;
+    [SerializeField] private int attackDamage;
 
     private Vector3 spawnPoint;
     private Vector3 lastKnownPlayerPosition;
 
-    // Simple awareness state
-    private bool simpleAware;
+    private bool isAware;
 
     // Combat
     private PlayerHealth playerHealth;
     private float lastAttackTime = -Mathf.Infinity;
 
-    // Angel runtime
-    private float angelNoTargetUnwatchedTimer;
-    private float angelBaseSpeed;
-    private float angelBaseAccel;
+    // Watch timer
+    private float noTargetUnwatchedTimer;
+
+    // Difficulty
+    [SerializeField] private GameDifficulty.Difficulty difficulty;
+
+    // States
+    private enum State {Idle, Chase, FrozenNoTarget, ReturnToSpawn}
+    private State state = State.Idle;
 
     private void Awake()
     {
@@ -67,21 +72,19 @@ public class WeepingAngelEnemy : MonoBehaviour
         agent.updateRotation = false;
 
         spawnPoint = transform.position;
-
-        if (player != null)
-            playerHealth = player.GetComponent<PlayerHealth>();
-
-        if (playerCamera == null) 
-            playerCamera = Camera.main;
-
-        angelBaseSpeed = agent.speed;
-        angelBaseAccel = agent.acceleration;
     }
 
     private void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player").transform;
-        playerCamera = Camera.main;
+
+        if (player != null)
+            playerHealth = player.GetComponent<PlayerHealth>();
+            AssignDifficultyStats();
+
+        if (playerCamera == null) 
+            playerCamera = Camera.main;
+
         StartCoroutine(StateLoop());
     }
 
@@ -93,83 +96,113 @@ public class WeepingAngelEnemy : MonoBehaviour
         TryAttackIfValid();
     }
 
+    private void AssignDifficultyStats()
+    {
+        // Random stats are chosen from the lower half of the bounds
+        if (difficulty == GameDifficulty.Difficulty.Story)
+        {
+            awarenessRadius = Random.Range(minAwarenessRadius, (minAwarenessRadius + maxAwarenessRadius) / 2f);
+            returnDelay = Random.Range(minReturnDelay, (minReturnDelay + maxReturnDelay) / 2f);
+            baseSpeed = Random.Range(minBaseSpeed, (minBaseSpeed + maxBaseSpeed) / 2f);
+            attackDamage = 15;
+        }
+        // Random stats are chosen from the upper half of the bounds
+        else if (difficulty == GameDifficulty.Difficulty.Challenge)
+        {
+            awarenessRadius = Random.Range((minAwarenessRadius + maxAwarenessRadius) / 2f, maxAwarenessRadius);
+            returnDelay = Random.Range((minReturnDelay + maxReturnDelay) / 2f, maxReturnDelay);
+            baseSpeed = Random.Range((minBaseSpeed + maxBaseSpeed) / 2f, maxBaseSpeed);
+            attackDamage = 40;
+        }
+        // Random stats can be any value within the bounds
+        else
+        {
+            awarenessRadius = Random.Range(minAwarenessRadius, maxAwarenessRadius);
+            returnDelay = Random.Range(minReturnDelay, maxReturnDelay);
+            baseSpeed = Random.Range(minBaseSpeed, maxBaseSpeed);
+            attackDamage = 25;
+        }
+
+        agent.speed = baseSpeed;
+    }
+
     private void UpdatePerception()
     {
         if (player == null)
         {
-            simpleAware = false;
+            isAware = false;
             return;
         }
 
+        // Enemy is aware of the player if the player is within it's awareness radius
         float dist = Vector3.Distance(transform.position, player.position);
-        simpleAware = dist <= angelAwarenessRadius;
+        isAware = dist <= awarenessRadius;
 
-        if (simpleAware)
+        if (isAware)
             lastKnownPlayerPosition = player.position;
     }
 
-    // Weeping Angel enemy behaviour
-    private enum AngelState {Idle, Chase, FrozenNoTarget, ReturnToSpawn}
-    private AngelState angelState = AngelState.Idle;
-
+    // Simple state machine controls behaviour
     private IEnumerator StateLoop()
     {
         agent.updatePosition = true;
         agent.isStopped = true;
         agent.ResetPath();
-        RestoreAngelMove();
+        RestoreMove();
 
-        angelState = AngelState.Idle;
-        angelNoTargetUnwatchedTimer = 0f;
+        state = State.Idle;
+        noTargetUnwatchedTimer = 0f;
 
         while (true)
         {
-            switch (angelState)
+            switch (state)
             {
-                case AngelState.Idle: yield return Angel_Idle(); break;
-                case AngelState.Chase: yield return Angel_Chase(); break;
-                case AngelState.FrozenNoTarget: yield return Angel_FrozenNoTarget(); break;
-                case AngelState.ReturnToSpawn: yield return Angel_ReturnToSpawn(); break;
+                case State.Idle: yield return Idle(); break;
+                case State.Chase: yield return Chase(); break;
+                case State.FrozenNoTarget: yield return FrozenNoTarget(); break;
+                case State.ReturnToSpawn: yield return ReturnToSpawn(); break;
             }
             yield return null;
         }
     }
 
-    private IEnumerator Angel_Idle()
+    // Enemy is frozen at its spawn until a player is detected
+    private IEnumerator Idle()
     {
-        while (angelState == AngelState.Idle)
+        while (state == State.Idle)
         {
-            AngelFreezeNow();
-            if (simpleAware) 
+            FreezeNow();
+            if (isAware) 
             { 
-                angelState = AngelState.Chase; 
+                state = State.Chase; 
                 yield break; 
             }
             yield return null;
         }
     }
 
-    private IEnumerator Angel_Chase()
+    // Enemy is aware of player and will pursue them when unobserved
+    private IEnumerator Chase()
     {
-        while (angelState == AngelState.Chase)
+        while (state == State.Chase)
         {
             agent.stoppingDistance = Mathf.Max(attackRange, 1f);
-            if (!simpleAware || player == null)
+            if (!isAware || player == null)
             {
-                AngelFreezeNow();
-                angelNoTargetUnwatchedTimer = 0f;
-                angelState = AngelState.FrozenNoTarget;
+                FreezeNow();
+                noTargetUnwatchedTimer = 0f;
+                state = State.FrozenNoTarget;
                 yield break;
             }
 
             if (IsObservedByPlayer_CameraConeLOS())
             {
-                AngelFreezeNow();
+                FreezeNow();
                 yield return null;
                 continue;
             }
 
-            RestoreAngelMove();
+            RestoreMove();
             agent.isStopped = false;
             agent.SetDestinationKeepOnNavmesh(player.position, destinationSampleRadius);
             FaceToward(player.position, turnSpeed);
@@ -178,24 +211,25 @@ public class WeepingAngelEnemy : MonoBehaviour
         }
     }
 
-    private IEnumerator Angel_FrozenNoTarget()
+    // Enemy has lost sight of the player and so freezes in place
+    private IEnumerator FrozenNoTarget()
     {
-        while (angelState == AngelState.FrozenNoTarget)
+        while (state == State.FrozenNoTarget)
         {
-            AngelFreezeNow();
+            FreezeNow();
 
-            if (simpleAware) 
+            if (isAware) 
             { 
-                angelState = AngelState.Chase; 
+                state = State.Chase; 
                 yield break; 
             }
 
             if (!IsObservedByPlayer_CameraConeLOS())
             {
-                angelNoTargetUnwatchedTimer += Time.deltaTime;
-                if (angelNoTargetUnwatchedTimer >= angelUnwatchedReturnDelay)
+                noTargetUnwatchedTimer += Time.deltaTime;
+                if (noTargetUnwatchedTimer >= returnDelay)
                 {
-                    angelState = AngelState.ReturnToSpawn;
+                    state = State.ReturnToSpawn;
                     yield break;
                 }
             }
@@ -204,35 +238,36 @@ public class WeepingAngelEnemy : MonoBehaviour
         }
     }
 
-    private IEnumerator Angel_ReturnToSpawn()
+    // When unobserved for too long, return to spawn at a faster than normal speed
+    private IEnumerator ReturnToSpawn()
     {
-        while (angelState == AngelState.ReturnToSpawn)
+        while (state == State.ReturnToSpawn)
         {
-            if (simpleAware) 
+            if (isAware) 
             { 
-                RestoreAngelMove(); 
-                angelState = AngelState.Chase; 
+                RestoreMove(); 
+                state = State.Chase; 
                 yield break; 
             }
 
             if (IsObservedByPlayer_CameraConeLOS())
             {
-                RestoreAngelMove();
-                AngelFreezeNow();
+                RestoreMove();
+                FreezeNow();
                 yield return null;
                 continue;
             }
 
-            ApplyAngelReturnMove();
+            ApplyReturnMoveSpeed();
             agent.isStopped = false;
             agent.stoppingDistance = 0f;
             agent.SetDestinationKeepOnNavmesh(spawnPoint, destinationSampleRadius);
 
-            if (Vector3.Distance(transform.position, spawnPoint) <= angelSpawnArriveDistance)
+            if (Vector3.Distance(transform.position, spawnPoint) <= spawnArriveDistance)
             {
-                RestoreAngelMove();
-                AngelFreezeNow();
-                angelState = AngelState.Idle;
+                RestoreMove();
+                FreezeNow();
+                state = State.Idle;
                 yield break;
             }
 
@@ -240,7 +275,8 @@ public class WeepingAngelEnemy : MonoBehaviour
         }
     }
 
-    private void AngelFreezeNow()
+    // Stops the enemy from moving
+    private void FreezeNow()
     {
         agent.isStopped = true;
         agent.ResetPath();
@@ -249,19 +285,20 @@ public class WeepingAngelEnemy : MonoBehaviour
         agent.angularSpeed = 0f;
     }
 
-    private void ApplyAngelReturnMove()
+    // Makes the enemy move faster when returning to spawn
+    private void ApplyReturnMoveSpeed()
     {
-        agent.speed = angelBaseSpeed * angelReturnSpeedMultiplier;
-        agent.acceleration = angelBaseAccel * angelReturnSpeedMultiplier;
+        agent.speed = baseSpeed * returnSpeedMultiplier;
     }
 
-    private void RestoreAngelMove()
+    // Allows enemy to move again
+    private void RestoreMove()
     {
-        agent.speed = angelBaseSpeed;
-        agent.acceleration = angelBaseAccel;
+        agent.speed = baseSpeed;
         agent.angularSpeed = turnSpeed;
     }
 
+    // Determines whether the player is looking at the enemy or not
     private bool IsObservedByPlayer_CameraConeLOS()
     {
         Camera cam = playerCamera != null ? playerCamera : Camera.main;
@@ -327,7 +364,7 @@ public class WeepingAngelEnemy : MonoBehaviour
 
         Vector3 dir = toEnemy / dist;
 
-        if (Physics.Raycast(origin, dir, out RaycastHit hit, dist + 0.05f, angelObserveMask, QueryTriggerInteraction.Ignore))
+        if (Physics.Raycast(origin, dir, out RaycastHit hit, dist + 0.05f, observeMask, QueryTriggerInteraction.Ignore))
         {
             bool seen = hit.transform.root == transform;
             return seen;
@@ -336,6 +373,7 @@ public class WeepingAngelEnemy : MonoBehaviour
         return false;
     }
 
+    // Makes the enemy face the direction of movement
     private void UpdateMovementFacing()
     {
         if (agent.isStopped) 
@@ -369,12 +407,13 @@ public class WeepingAngelEnemy : MonoBehaviour
             return;
     }
 
+    // Multiple checks for whether the player can be successfully attacked. If possible, do so
     private void TryAttackIfValid()
     {
         if (player == null) 
             return;
 
-        if (!simpleAware) 
+        if (!isAware) 
             return;
         if (IsObservedByPlayer_CameraConeLOS()) 
             return;
@@ -419,14 +458,5 @@ public class WeepingAngelEnemy : MonoBehaviour
                 return hit.position;
         }
         return null;
-    }
-
-    private static float GetAlternatingYawOffset(int index, float stepAngle)
-    {
-        if (index == 0) 
-            return 0f;
-        int k = (index + 1) / 2;
-        float side = (index % 2 == 1) ? 1f : -1f;
-        return side * k * stepAngle;
     }
 }

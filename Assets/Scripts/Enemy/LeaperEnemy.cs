@@ -10,267 +10,282 @@ public class LeaperEnemy : MonoBehaviour
     [Header("Target")]
     [SerializeField] private Transform player;
 
-    [Header("Wander")]
-    [SerializeField] private float wanderRadius = 50f;
-    [SerializeField] private float wanderInterval = 15f;
-    [SerializeField] private float dwellMin = 5f;
-    [SerializeField] private float dwellMax = 10f;
+    [Header("Awareness")]
+    private float awarenessRadius;
+    [SerializeField] private float minAwarenessRadius = 25f;
+    [SerializeField] private float maxAwarenessRadius = 75f;
 
+    [Header("Wander")]
+    private float wanderRadius;
+    [SerializeField] private float minWanderRadius = 25f;
+    [SerializeField] private float maxWanderRadius = 75f;
+
+    private float wanderInterval;
+    [SerializeField] private float minWanderInterval = 10f;
+    [SerializeField] private float maxWanderInterval = 20f;
+
+    private float dwellTime;
+    [SerializeField] private float dwellMin = 3f;
+    [SerializeField] private float dwellMax = 10f;
+    
     [Header("NavMesh Sampling")]
     [SerializeField] private float wanderSampleRadius = 10f;
+    [SerializeField] private float hopSampleRadius = 2f;
 
-    [Header("Rotation")]
-    [SerializeField] private float turnSpeed = 900f;
+    [Header("Hop Movement")]
+    private float hopDistance;
+    [SerializeField] private float minHopDistance = 5f;
+    [SerializeField] private float maxHopDistance = 10f;
+
+    [SerializeField] private float hopDuration = 0.5f;
+    [SerializeField] private float hopArcHeight = 1f;
+
+    private float hopCooldown;
+    [SerializeField] private float minHopCooldown = 0.3f;
+    [SerializeField] private float maxHopCooldown = 1f;
+
+    [SerializeField] private float hopTurnSpeed = 900f;
+    [SerializeField] private float arriveDistance = 1f;
+
+    [Header("Combat")]
+    [SerializeField] private float attackRange = 5f;
+    [SerializeField] private float attackInterval = 3f;
+    private int attackDamage;
 
     [Header("Animation")]
     [SerializeField] private Animator animator;
 
-    [Header("Leaper Perception")]
-    [SerializeField] private float leaperAwarenessRadius = 50f;
-
-    [Header("Leaper Loss Behaviour")]
-    [SerializeField] private float leaperWaitAtLastKnownMin = 5f;
-    [SerializeField] private float leaperWaitAtLastKnownMax = 10f;
-
-    [Header("Leaper Hop Movement")]
-    [SerializeField] private float leaperHopDistance = 5f;
-    [SerializeField] private float leaperHopDuration = 0.5f;
-    [SerializeField] private float leaperHopCooldown = 1f;
-    [SerializeField] private float leaperHopArcHeight = 1f;
-    [SerializeField] private float leaperArriveDistance = 1f;
-    [SerializeField] private float leaperTurnSpeed = 900f;
-    [SerializeField] private float leaperHopSampleRadius = 2.0f;
-
-    [Header("Combat")]
-    [SerializeField] private float attackRange = 5f;
-    [SerializeField] private int attackDamage = 25;
-    [SerializeField] private float attackInterval = 3f;
-
     private Vector3 spawnPoint;
     private Vector3 lastKnownPlayerPosition;
 
-    // Simple awareness state
-    private bool simpleAware;
+    private bool isAware;
+    private bool isHopping;
 
     // Combat
     private PlayerHealth playerHealth;
     private float lastAttackTime = -Mathf.Infinity;
 
-    // Leaper runtime
-    private bool leaperIsHopping;
+    // Difficulty
+    [SerializeField] private GameDifficulty.Difficulty difficulty;
+
+    // States
+    private enum State {Wander, Chase, Investigate, WaitAtLastKnown}
+    private State state = State.Wander;
 
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         agent.updateRotation = false;
+        agent.updatePosition = false;
 
         spawnPoint = transform.position;
-
-        if (player != null)
-            playerHealth = player.GetComponent<PlayerHealth>();
     }
 
     private void Start()
     {
-        player = GameObject.FindGameObjectWithTag("Player").transform;
+        player = GameObject.FindGameObjectWithTag("Player")?.transform;
+
+        if (player != null)
+        {
+            playerHealth = player.GetComponent<PlayerHealth>();
+            difficulty = player.GetComponent<GameDifficulty>().difficulty;
+            AssignDifficultyStats();
+        }
+
         StartCoroutine(StateLoop());
     }
 
     private void Update()
     {
         UpdatePerception();
-        UpdateMovementFacing();
-        UpdateAnimation();
         TryAttackIfValid();
+
+        if (isAware && player != null)
+        {
+            FaceToward(player.position);
+        }
+    }
+
+    private void AssignDifficultyStats()
+    {
+        // Random stats are chosen from the lower half of the bounds
+        if (difficulty == GameDifficulty.Difficulty.Story)
+        {
+            awarenessRadius = Random.Range(minAwarenessRadius, (minAwarenessRadius + maxAwarenessRadius) / 2f);
+            wanderRadius = Random.Range(minWanderRadius, (minWanderRadius + maxWanderRadius) / 2f);
+            wanderInterval = Random.Range(minWanderInterval, (minWanderInterval + maxWanderInterval) / 2f);
+            dwellTime = Random.Range(dwellMin, (dwellMin + dwellMax) / 2f);
+
+            hopDistance = Random.Range(minHopDistance, (minHopDistance + maxHopDistance) / 2f);
+            hopCooldown = Random.Range(minHopCooldown, (minHopCooldown + maxHopCooldown) / 2f);
+
+            attackDamage = 15;
+        }
+        // Random stats are chosen from the upper half of the bounds
+        else if (difficulty == GameDifficulty.Difficulty.Challenge)
+        {
+            awarenessRadius = Random.Range((minAwarenessRadius + maxAwarenessRadius) / 2f, maxAwarenessRadius);
+            wanderRadius = Random.Range((minWanderRadius + maxWanderRadius) / 2f, maxWanderRadius);
+            wanderInterval = Random.Range((minWanderInterval + maxWanderInterval) / 2f, maxWanderInterval);
+            dwellTime = Random.Range((dwellMin + dwellMax) / 2f, dwellMax);
+
+            hopDistance = Random.Range((minHopDistance + maxHopDistance) / 2f, maxHopDistance);
+            hopCooldown = Random.Range((minHopCooldown + maxHopCooldown) / 2f, maxHopCooldown);
+
+            attackDamage = 40;
+        }
+        // Random stats can be any value within the bounds
+        else
+        {
+            awarenessRadius = Random.Range(minAwarenessRadius, maxAwarenessRadius);
+            wanderRadius = Random.Range(minWanderRadius, maxWanderRadius);
+            wanderInterval = Random.Range(minWanderInterval, maxWanderInterval);
+            dwellTime = Random.Range(dwellMin, dwellMax);
+
+            hopDistance = Random.Range(minHopDistance, maxHopDistance);
+            hopCooldown = Random.Range(minHopCooldown, maxHopCooldown);
+
+            attackDamage = 25;
+        }
     }
 
     private void UpdatePerception()
     {
         if (player == null)
         {
-            simpleAware = false;
+            isAware = false;
             return;
         }
 
-        float dist = Vector3.Distance(transform.position, player.position);
-        simpleAware = dist <= leaperAwarenessRadius;
+        // Enemy is aware of the player if the player is within it's awareness radius
+        isAware = Vector3.Distance(transform.position, player.position) <= awarenessRadius;
 
-        if (simpleAware)
+        if (isAware)
             lastKnownPlayerPosition = player.position;
     }
 
-    // Leaper enemy behaviour
-    private enum LeaperState {Wander, Chase, GoToLastKnown, WaitAtLastKnown, ReturnToSpawn}
-    private LeaperState leaperState = LeaperState.Wander;
-
+    // Simple state machine controls behaviour
     private IEnumerator StateLoop()
     {
-        agent.isStopped = true;
-        agent.ResetPath();
-        agent.updatePosition = false;
-
         while (true)
         {
-            if (simpleAware) 
-                leaperState = LeaperState.Chase;
+            if (isAware)
+                state = State.Chase;
 
-            switch (leaperState)
+            switch (state)
             {
-                case LeaperState.Wander: agent.stoppingDistance = 0f; yield return Leaper_Wander(); break;
-                case LeaperState.Chase: yield return Leaper_Chase(); agent.stoppingDistance = Mathf.Max(attackRange, 1f); break;
-                case LeaperState.GoToLastKnown: yield return Leaper_GoToLastKnown(); agent.stoppingDistance = 0f; break;
-                case LeaperState.WaitAtLastKnown: yield return Leaper_WaitAtLastKnown(); agent.stoppingDistance = 0f; break;
-                case LeaperState.ReturnToSpawn: yield return Leaper_ReturnToSpawn(); agent.stoppingDistance = 0f; break;
+                case State.Wander: yield return Wander(); break;
+                case State.Chase: yield return Chase(); break;
+                case State.Investigate: yield return Investigate(); break;
+                case State.WaitAtLastKnown: yield return WaitAtLastKnown(); break;
             }
             yield return null;
         }
     }
 
-    private IEnumerator Leaper_Wander()
+    // Enemy wanders randomly within its wander radius
+    private IEnumerator Wander()
     {
         Vector3? roam = GetRandomNavmeshPoint(spawnPoint, wanderRadius, 20, wanderSampleRadius);
-        if (!roam.HasValue) 
+        if (!roam.HasValue)
             yield break;
 
-        float timer = 0f;
-        while (timer < wanderInterval)
+        float t = 0f;
+        while (t < wanderInterval)
         {
-            if (simpleAware) 
-            { 
-                leaperState = LeaperState.Chase; 
-                yield break; 
-            }
-            if (Vector3.Distance(transform.position, roam.Value) <= leaperArriveDistance) 
-                break;
-
-            yield return Leaper_HopToward(roam.Value);
-            timer += leaperHopDuration + leaperHopCooldown;
+            if (isAware) { state = State.Chase; yield break; }
+            yield return HopToward(roam.Value);
+            t += hopDuration + hopCooldown;
         }
 
-        float dwellFor = Random.Range(dwellMin, dwellMax);
+        float dwell = dwellTime;
         float elapsed = 0f;
-        while (elapsed < dwellFor)
+        while (elapsed < dwell)
         {
-            if (simpleAware) 
-            { 
-                leaperState = LeaperState.Chase; 
-                yield break; 
-            }
+            if (isAware) { state = State.Chase; yield break; }
             elapsed += Time.deltaTime;
             yield return null;
         }
     }
 
-    private IEnumerator Leaper_Chase()
+    // Enemy has spotted player and is pursuing them
+    private IEnumerator Chase()
     {
-        while (leaperState == LeaperState.Chase)
+        while (state == State.Chase)
         {
-            if (!simpleAware || player == null) 
-            { 
-                leaperState = LeaperState.GoToLastKnown; 
-                yield break; 
-            }
-
-            float dist = Vector3.Distance(transform.position, player.position);
-            if (dist <= attackRange)
+            if (!isAware || player == null)
             {
-                FaceToward(player.position, leaperTurnSpeed);
-                yield return null;
-                continue;
+                state = State.Investigate;
+                yield break;
             }
 
-            yield return Leaper_HopToward(player.position);
+            if (Vector3.Distance(transform.position, player.position) > attackRange)
+                yield return HopToward(player.position);
+
+            yield return null;
         }
     }
 
-    private IEnumerator Leaper_GoToLastKnown()
+    // Enemy has lost sight of player so goes to the last know player location
+    private IEnumerator Investigate()
     {
-        Vector3 target = lastKnownPlayerPosition;
-        while (leaperState == LeaperState.GoToLastKnown)
+        while (state == State.Investigate)
         {
-            if (simpleAware) 
-            { 
-                leaperState = LeaperState.Chase; 
-                yield break; 
+            if (isAware) { state = State.Chase; yield break; }
+            if (Vector3.Distance(transform.position, lastKnownPlayerPosition) <= arriveDistance)
+            {
+                state = State.WaitAtLastKnown;
+                yield break;
             }
-            if (Vector3.Distance(transform.position, target) <= leaperArriveDistance) 
-            { 
-                leaperState = LeaperState.WaitAtLastKnown; 
-                yield break; 
-            }
-            yield return Leaper_HopToward(target);
+            yield return HopToward(lastKnownPlayerPosition);
         }
     }
 
-    private IEnumerator Leaper_WaitAtLastKnown()
+    // Enemy is at last known player position so waits in case of their return
+    private IEnumerator WaitAtLastKnown()
     {
-        float waitFor = Random.Range(leaperWaitAtLastKnownMin, leaperWaitAtLastKnownMax);
+        float waitFor = Random.Range(3f, 7f);
         float t = 0f;
         while (t < waitFor)
         {
-            if (simpleAware) 
-            { 
-                leaperState = LeaperState.Chase; 
-                yield break; 
-            }
+            if (isAware) { state = State.Chase; yield break; }
             t += Time.deltaTime;
             yield return null;
         }
-        leaperState = LeaperState.ReturnToSpawn;
+        state = State.Wander;
     }
 
-    private IEnumerator Leaper_ReturnToSpawn()
+    // The enemy moves in a hopping "arc" toward the player
+    private IEnumerator HopToward(Vector3 goal)
     {
-        while (leaperState == LeaperState.ReturnToSpawn)
-        {
-            if (simpleAware) 
-            { 
-                leaperState = LeaperState.Chase; 
-                yield break; 
-            }
-            if (Vector3.Distance(transform.position, spawnPoint) <= leaperArriveDistance) 
-            { 
-                leaperState = LeaperState.Wander; 
-                yield break; 
-            }
-            yield return Leaper_HopToward(spawnPoint);
-        }
-    }
-
-    private IEnumerator Leaper_HopToward(Vector3 goal)
-    {
-        if (leaperIsHopping) 
+        if (isHopping)
             yield break;
-        leaperIsHopping = true;
 
-        FaceToward(goal, leaperTurnSpeed);
+        isHopping = true;
 
+        // Determines starting location
         Vector3 start = transform.position;
-        Vector3 toGoal = goal - start; toGoal.y = 0f;
+        Vector3 toGoal = goal - start;
+        toGoal.y = 0f;
 
-        if (toGoal.sqrMagnitude < 0.0001f) 
-        { 
-            leaperIsHopping = false; 
-            yield break; 
-        }
-
-        float step = Mathf.Min(leaperHopDistance, toGoal.magnitude);
+        // Determines how far to hop
+        float step = Mathf.Min(hopDistance, toGoal.magnitude);
         Vector3 desired = start + toGoal.normalized * step;
 
+        // Determines landing location
         Vector3 landing = desired;
-        if (NavMesh.SamplePosition(desired, out NavMeshHit hit, leaperHopSampleRadius, NavMesh.AllAreas))
+        if (NavMesh.SamplePosition(desired, out NavMeshHit hit, hopSampleRadius, NavMesh.AllAreas))
             landing = hit.position;
 
+        // Moves the enemy in an arc across a set duration
         float t = 0f;
-        while (t < leaperHopDuration)
+        while (t < hopDuration)
         {
-            float a = t / Mathf.Max(leaperHopDuration, 0.0001f);
+            float a = t / hopDuration;
             Vector3 pos = Vector3.Lerp(start, landing, a);
-            pos.y += Mathf.Sin(a * Mathf.PI) * leaperHopArcHeight;
-
-            transform.position = pos;
-            agent.nextPosition = transform.position;
-
+            pos.y += Mathf.Sin(a * Mathf.PI) * hopArcHeight;
+            Vector3 moveStep = pos - transform.position;
+            agent.Move(moveStep);
             t += Time.deltaTime;
             yield return null;
         }
@@ -278,83 +293,36 @@ public class LeaperEnemy : MonoBehaviour
         transform.position = landing;
         agent.Warp(landing);
 
-        float cd = 0f;
-        while (cd < leaperHopCooldown)
-        {
-            cd += Time.deltaTime;
-            yield return null;
-        }
-
-        leaperIsHopping = false;
+        yield return new WaitForSeconds(hopCooldown);
+        isHopping = false;
     }
 
-    private void UpdateMovementFacing()
+    // Makes the enemy face the player
+    private void FaceToward(Vector3 target)
     {
-        if (agent.isStopped) 
-            return;
-        if (agent.velocity.sqrMagnitude <= 0.01f) 
-            return;
-
-        Vector3 dir = agent.velocity;
+        Vector3 dir = target - transform.position;
         dir.y = 0f;
-        if (dir.sqrMagnitude <= 0.0001f) 
+        if (dir.sqrMagnitude < 0.001f)
             return;
 
-        Quaternion targetRotation = Quaternion.LookRotation(dir.normalized);
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
+        Quaternion rot = Quaternion.LookRotation(dir.normalized);
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, rot, hopTurnSpeed * Time.deltaTime);
     }
 
-    private void FaceToward(Vector3 worldPos, float degreesPerSecond)
-    {
-        Vector3 to = worldPos - transform.position;
-        to.y = 0f;
-        if (to.sqrMagnitude <= 0.0001f) 
-            return;
-
-        Quaternion target = Quaternion.LookRotation(to.normalized);
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, target, degreesPerSecond * Time.deltaTime);
-    }
-
-    private void UpdateAnimation()
-    {
-        if (animator == null) 
-            return;
-    }
-
+    // Multiple checks for whether the player can be successfully attacked. If possible, do so
     private void TryAttackIfValid()
     {
-        if (player == null) 
+        if (!isAware || playerHealth == null)
             return;
 
-        if (!simpleAware) 
+        if (Vector3.Distance(transform.position, player.position) > attackRange)
             return;
 
-        float distance = Vector3.Distance(transform.position, player.position);
-        if (distance > attackRange) 
-            return;
-
-        if (Time.time - lastAttackTime < attackInterval) 
-            return;
-
-        if (playerHealth == null) 
-            playerHealth = player.GetComponent<PlayerHealth>();
-        if (playerHealth == null || !playerHealth.IsAlive) 
+        if (Time.time - lastAttackTime < attackInterval)
             return;
 
         playerHealth.TakeDamage(attackDamage);
         lastAttackTime = Time.time;
-    }
-
-    private bool HasReachedDestination()
-    {
-        if (agent.pathPending) 
-            return false;
-        if (agent.pathStatus == NavMeshPathStatus.PathInvalid) 
-            return false;
-        if (!agent.hasPath) 
-            return true;
-
-        return agent.remainingDistance <= Mathf.Max(agent.stoppingDistance, 0.1f);
     }
 
     private static Vector3? GetRandomNavmeshPoint(Vector3 center, float radius, int attempts, float sampleRadius)
@@ -366,14 +334,5 @@ public class LeaperEnemy : MonoBehaviour
                 return hit.position;
         }
         return null;
-    }
-
-    private static float GetAlternatingYawOffset(int index, float stepAngle)
-    {
-        if (index == 0) 
-            return 0f;
-        int k = (index + 1) / 2;
-        float side = (index % 2 == 1) ? 1f : -1f;
-        return side * k * stepAngle;
     }
 }
