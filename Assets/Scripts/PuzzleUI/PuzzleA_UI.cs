@@ -1,212 +1,336 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections.Generic;
-using UnityEngine.InputSystem;
 
-// Create a puzzle to match up same-coloured pairs of randomly generated left and right nodes
-public class PuzzleA_UI : MonoBehaviour
+public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 {
-    [Header("Puzzle References")]
+    [Header("World Panel (optional in debug)")]
     [SerializeField] private PuzzlePanel_script puzzlePanel;
+
+    [Header("Parents containing LEFT and RIGHT node buttons")]
     [SerializeField] private Transform leftPanel;
     [SerializeField] private Transform rightPanel;
+
+    [Header("Wires")]
     [SerializeField] private RectTransform wiresParent;
     [SerializeField] private RectTransform wirePrefab;
 
-    private Controls controls;
-    private bool puzzleActive = false;
+    [Header("Pairs")]
+    [SerializeField] private int pairCount = 4;
 
-    private readonly List<Image> leftNodes = new ();
-    private readonly List<Image> rightNodes = new ();
+    [Header("ID -> Color (index = ID)")]
+    [SerializeField]
+    private Color[] idColors =
+    {
+        new Color(0.95f, 0.30f, 0.30f),
+        new Color(0.30f, 0.60f, 0.95f),
+        new Color(0.35f, 0.90f, 0.35f),
+        new Color(0.95f, 0.85f, 0.30f),
+    };
 
-    private Image selectedLeftNode;
-    private readonly List<(Image left, Image right, RectTransform wire)> connections = new ();
+    private readonly List<Button> leftNodes = new();
+    private readonly List<Button> rightNodes = new();
+
+    private readonly Dictionary<Button, int> leftId = new();
+    private readonly Dictionary<Button, int> rightId = new();
+
+    private readonly Dictionary<Button, Button> connections = new();
+    private readonly Dictionary<Button, RectTransform> connectionWires = new();
+
+    private Button selectedLeft;
 
     private void Awake()
     {
         if (puzzlePanel == null)
             puzzlePanel = GetComponentInParent<PuzzlePanel_script>();
-
-        controls = new Controls();
-        controls.Gameplay.Click.performed += ctx => HandleClick();
-        controls.Gameplay.Cancel.performed += ctx => ClosePuzzle();
     }
 
     private void OnEnable()
     {
-        controls.Enable();
-        InitPuzzle();
+        ResetPuzzle();
     }
 
     private void OnDisable()
     {
-        controls.Disable();
+        selectedLeft = null;
+        ClearConnections();
     }
 
-    private void InitPuzzle()
+    public void ResetPuzzle()
     {
-        // Clear potential previous lists
+        if (!ValidateReferences())
+            return;
+
+        CacheNodes();
+        AssignIdsAndColors();
+        ShuffleRightSidePositions();
+        ClearConnections();
+        selectedLeft = null;
+    }
+
+    private bool ValidateReferences()
+    {
+        if (leftPanel == null || rightPanel == null)
+        {
+            Debug.LogError("PuzzleA_UI: LeftPanel or RightPanel is not assigned.", this);
+            return false;
+        }
+        if (wiresParent == null || wirePrefab == null)
+        {
+            Debug.LogError("PuzzleA_UI: WiresParent or WirePrefab is not assigned.", this);
+            return false;
+        }
+
+        var img = wirePrefab.GetComponent<Image>();
+        if (img == null)
+        {
+            Debug.LogError("PuzzleA_UI: WirePrefab must have an Image component.", this);
+            return false;
+        }
+
+        if (wirePrefab.pivot.x > 0.01f || Mathf.Abs(wirePrefab.pivot.y - 0.5f) > 0.01f)
+            Debug.LogWarning("PuzzleA_UI: WirePrefab pivot should be (0, 0.5) for correct wire placement.", this);
+
+        return true;
+    }
+
+    private void CacheNodes()
+    {
         leftNodes.Clear();
         rightNodes.Clear();
-        connections.Clear();
+        leftId.Clear();
+        rightId.Clear();
 
-        // Create images (based on coloured nodes in hierarchy) to act as the left and right nodes
-        foreach (Transform child in leftPanel)
+        for (int i = 0; i < leftPanel.childCount; i++)
         {
-            Image node = child.GetComponent<Image>();
-            if (node != null) leftNodes.Add(node);
+            var btn = leftPanel.GetChild(i).GetComponent<Button>();
+            if (btn != null) leftNodes.Add(btn);
         }
 
-        foreach (Transform child in rightPanel)
+        for (int i = 0; i < rightPanel.childCount; i++)
         {
-            Image node = child.GetComponent<Image>();
-            if (node != null) rightNodes.Add(node);
+            var btn = rightPanel.GetChild(i).GetComponent<Button>();
+            if (btn != null) rightNodes.Add(btn);
         }
 
-        // Shuffle right nodes for random placement
-        ShuffleRightNodes();
+        pairCount = Mathf.Min(pairCount, leftNodes.Count, rightNodes.Count);
 
-        // Leads to HandleClick() call
-        puzzleActive = true;
+        for (int i = 0; i < leftNodes.Count; i++)
+        {
+            int idx = i;
+            leftNodes[idx].onClick.RemoveAllListeners();
+            leftNodes[idx].onClick.AddListener(() => OnLeftClicked(leftNodes[idx]));
+        }
+
+        for (int i = 0; i < rightNodes.Count; i++)
+        {
+            int idx = i;
+            rightNodes[idx].onClick.RemoveAllListeners();
+            rightNodes[idx].onClick.AddListener(() => OnRightClicked(rightNodes[idx]));
+        }
     }
 
-    private void HandleClick()
+    private void AssignIdsAndColors()
     {
-        if (!puzzleActive) return;
-
-        // Upon click, read mouse position and use Raycast to return UI elements under the cursor
-        Vector2 mousePos = Mouse.current.position.ReadValue();
-        var raycastResults = new List<UnityEngine.EventSystems.RaycastResult>();
-        var eventData = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current)
+        for (int i = 0; i < leftNodes.Count; i++)
         {
-            position = mousePos
-        };
-        UnityEngine.EventSystems.EventSystem.current.RaycastAll(eventData, raycastResults);
+            int id = (i < pairCount) ? i : -1;
+            leftId[leftNodes[i]] = id;
+            SetNodeColor(leftNodes[i], GetColorForId(id));
+        }
 
-        foreach (var result in raycastResults)
+        for (int i = 0; i < rightNodes.Count; i++)
         {
-            // Checks if an image exists in what was clicked
-            Image clickedNode = result.gameObject.GetComponent<Image>();
-            if (clickedNode == null) continue; // Skips if no image
+            int id = (i < pairCount) ? i : -1;
+            rightId[rightNodes[i]] = id;
+            SetNodeColor(rightNodes[i], GetColorForId(id));
+        }
+    }
 
-            if (leftNodes.Contains(clickedNode))
+    private void ShuffleRightSidePositions()
+    {
+        if (rightNodes.Count <= 1) return;
+
+        List<int> original = new List<int>(rightNodes.Count);
+        for (int i = 0; i < rightNodes.Count; i++)
+            original.Add(rightId.TryGetValue(rightNodes[i], out int id) ? id : -999);
+
+        const int maxAttempts = 20;
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            for (int i = 0; i < rightPanel.childCount; i++)
             {
-                if (selectedLeftNode == clickedNode)
-                {
-                    selectedLeftNode = null;
-                    return;
-                }
-                selectedLeftNode = clickedNode;
-                return;
+                int j = Random.Range(i, rightPanel.childCount);
+                rightPanel.GetChild(j).SetSiblingIndex(i);
             }
-            // If clicked node is a right node and there is currently a selected left node, connect them and check solved status
-            else if (rightNodes.Contains(clickedNode) && selectedLeftNode != null)
-            {
-                ConnectNodes(selectedLeftNode, clickedNode);
-                selectedLeftNode = null;
 
-                if (CheckIfSolved())
-                    SolvePuzzle();
-                return;
+            List<int> current = new List<int>(rightNodes.Count);
+            for (int i = 0; i < rightPanel.childCount; i++)
+            {
+                var btn = rightPanel.GetChild(i).GetComponent<Button>();
+                if (btn == null) continue;
+                current.Add(rightId.TryGetValue(btn, out int id) ? id : -999);
             }
+
+            if (!IsSameOrder(original, current))
+                return;
+        }
+
+        if (rightPanel.childCount >= 2)
+        {
+            Transform a = rightPanel.GetChild(0);
+            Transform b = rightPanel.GetChild(1);
+            int aIndex = a.GetSiblingIndex();
+            int bIndex = b.GetSiblingIndex();
+            a.SetSiblingIndex(bIndex);
+            b.SetSiblingIndex(aIndex);
         }
     }
-   
-    private Vector2 ScreenToLocal(RectTransform parent, Vector2 screenPos)
-    {
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            parent,
-            screenPos,
-            null,                 // canvas using Screen Space Overlay
-            out Vector2 localPoint);
 
-        return localPoint;
+    private bool IsSameOrder(List<int> a, List<int> b)
+    {
+        if (a == null || b == null) return false;
+        if (a.Count != b.Count) return false;
+        for (int i = 0; i < a.Count; i++)
+            if (a[i] != b[i]) return false;
+        return true;
     }
 
-    private void ConnectNodes(Image left, Image right)
+
+    private void OnLeftClicked(Button left)
     {
-        RemoveConnectionFromLeft(left); // Only one connection per node
+        selectedLeft = (selectedLeft == left) ? null : left;
+
+        for (int i = 0; i < leftNodes.Count; i++)
+        {
+            var o = leftNodes[i].GetComponent<Outline>();
+            if (o) o.enabled = (leftNodes[i] == selectedLeft);
+        }
+    }
+
+    private void OnRightClicked(Button right)
+    {
+        if (selectedLeft == null) return;
+
+        Connect(selectedLeft, right);
+        selectedLeft = null;
+
+        if (IsSolved())
+            PuzzleUIDebugLauncher.Instance?.NotifyPuzzleSolved("PuzzleA");
+            puzzlePanel?.MarkCompleted();
+    }
+
+    private void Connect(Button left, Button right)
+    {
+        if (connections.TryGetValue(left, out var oldRight))
+        {
+            connections.Remove(left);
+
+            if (connectionWires.TryGetValue(left, out var oldWire) && oldWire != null)
+                Destroy(oldWire.gameObject);
+
+            connectionWires.Remove(left);
+        }
+
+        connections[left] = right;
 
         RectTransform wire = Instantiate(wirePrefab, wiresParent);
+        wire.gameObject.SetActive(true);
 
-        // Get screen space positions of the UI nodes
-        Vector2 leftScreen = GetNodeScreenCenter(left.rectTransform);
-        Vector2 rightScreen = GetNodeScreenCenter(right.rectTransform);
+        var img = wire.GetComponent<Image>();
+        if (img != null && leftId.TryGetValue(left, out int lid))
+            img.color = GetColorForId(lid);
 
-        // Find local versions of those positions
-        Vector2 leftLocal = ScreenToLocal(wiresParent, leftScreen);
-        Vector2 rightLocal = ScreenToLocal(wiresParent, rightScreen);
+        connectionWires[left] = wire;
 
-        Vector2 diff = rightLocal - leftLocal; // Vector between left and right nodes being connected
-
-        float thickness = 3f;
-        wire.sizeDelta = new Vector2(diff.magnitude, thickness); // Wire width: distance between nodes
-
-        wire.anchoredPosition = leftLocal; // Lines up anchor with left node (wire prefab pivot set to left-centre)
-
-        // Find angle of direction vector relative to x axis ( arctan(diff.x / diff.y) ) 
-        // Atan2: arctan, but handles divide by 0 case and covers -180 to 180 degrees
-        float angle = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
-        wire.localRotation = Quaternion.Euler(0, 0, angle); // Sets wire rotation to this angle to visually connect nodes correctly
-
-        connections.Add((left, right, wire));     
+        UpdateWireTransform(wire, left.GetComponent<RectTransform>(), right.GetComponent<RectTransform>());
     }
 
-    private void RemoveConnectionFromLeft(Image left)
+    private void ClearConnections()
     {
-        for (int i = connections.Count - 1; i >= 0; i--)
+        connections.Clear();
+
+        foreach (var kv in connectionWires)
+            if (kv.Value != null) Destroy(kv.Value.gameObject);
+
+        connectionWires.Clear();
+    }
+
+    private void Update()
+    {
+        foreach (var kv in connections)
         {
-            if (connections[i].left == left)
-            {
-                Destroy(connections[i].wire.gameObject);
-                connections.RemoveAt(i);
-            }
+            var left = kv.Key;
+            var right = kv.Value;
+            if (left == null || right == null) continue;
+
+            if (!connectionWires.TryGetValue(left, out var wire) || wire == null) continue;
+
+            UpdateWireTransform(wire, left.GetComponent<RectTransform>(), right.GetComponent<RectTransform>());
         }
     }
 
-    private Vector2 GetNodeScreenCenter(RectTransform rect)
+    private bool IsSolved()
     {
-        Vector3[] corners = new Vector3[4];
-        rect.GetWorldCorners(corners); // Returns world space co-ordinates of rect's corners
+        int needed = 0;
 
-        // Find centre point: average of bottom-left (index 0) and top-right (index 2)
-        return (corners[0] + corners[2]) * 0.5f;
-    }
-
-    private void ShuffleRightNodes()
-    {
-        rightNodes.Shuffle(); // Uses ListExtensions Shuffle() method
-
-        // Re order node indices to ensure the UI visually reflects the shuffle
-        for (int i = 0; i < rightNodes.Count; i++)
-            rightNodes[i].transform.SetSiblingIndex(i);
-    }
-
-    private bool CheckIfSolved()
-    {
-        // Solved if every left node is connected to the matching-colored right node
-        foreach (var pair in connections)
+        foreach (var left in leftNodes)
         {
-            if (pair.left.name.Replace("LeftNode_", "") != pair.right.name.Replace("RightNode_", ""))
-                return false;
+            if (!leftId.TryGetValue(left, out int lid)) continue;
+            if (lid < 0 || lid >= pairCount) continue;
+
+            needed++;
+
+            if (!connections.TryGetValue(left, out var right)) return false;
+            if (!rightId.TryGetValue(right, out int rid)) return false;
+
+            if (lid != rid) return false;
         }
 
-        return connections.Count == leftNodes.Count;
+        return needed == pairCount;
     }
 
-    private void SolvePuzzle()
+    private void SetNodeColor(Button btn, Color c)
     {
-        puzzleActive = false;
-        if (puzzlePanel != null)
-            puzzlePanel.MarkCompleted();
+        var img = btn.GetComponent<Image>();
+        if (img != null)
+        {
+            img.color = c;
+            return;
+        }
 
-        Debug.Log("Puzzle A solved!");
+        var childImg = btn.GetComponentInChildren<Image>();
+        if (childImg != null) childImg.color = c;
     }
 
-    private void ClosePuzzle()
+    private Color GetColorForId(int id)
     {
-        puzzleActive = false;
-        if (puzzlePanel != null)
-            puzzlePanel.TryClosePuzzle();
+        if (id < 0) return new Color(0.5f, 0.5f, 0.5f, 1f);
+        if (idColors != null && id < idColors.Length) return idColors[id];
+        return Color.white;
+    }
+
+    private void UpdateWireTransform(RectTransform wire, RectTransform a, RectTransform b)
+    {
+        Vector2 aLocal = WorldCenterToLocal(a, wiresParent);
+        Vector2 bLocal = WorldCenterToLocal(b, wiresParent);
+
+        Vector2 dir = bLocal - aLocal;
+        float length = dir.magnitude;
+
+        wire.anchoredPosition = aLocal;
+        wire.sizeDelta = new Vector2(length, wire.sizeDelta.y);
+
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        wire.localRotation = Quaternion.Euler(0, 0, angle);
+    }
+
+    private Vector2 WorldCenterToLocal(RectTransform rt, RectTransform targetSpace)
+    {
+        Vector3 world = rt.TransformPoint(rt.rect.center);
+        Vector2 screen = RectTransformUtility.WorldToScreenPoint(null, world);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(targetSpace, screen, null, out var local);
+        return local;
     }
 }
