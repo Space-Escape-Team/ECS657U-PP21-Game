@@ -1,5 +1,12 @@
 fileFormatVersion: 2
 guid: 80f171f2c000f3a498027c34fc7e8ee1
+AssetOrigin:
+  serializedVersion: 1
+  productId: 290587
+  packageName: MONS6
+  packageVersion: 1.0
+  assetPath: Assets/MONS 6/FBX/JUMP.fbx
+  uploadId: 678238
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -21,8 +28,6 @@ ModelImporter:
     optimizeGameObjects: 0
     removeConstantScaleCurves: 0
     motionNodeName: 
-    rigImportErrors: 
-    rigImportWarnings: 
     animationImportErrors: 
     animationImportWarnings: 
     animationRetargetingWarnings: 
@@ -125,7 +130,7 @@ ModelImporter:
     legStretch: 0.05
     feetSpacing: 0
     globalScale: 1
-    rootMotionBoneName: 
+    rootMotionBoneName: polySurface2
     hasTranslationDoF: 0
     hasExtraRoot: 0
     skeletonHasParents: 1
@@ -133,7 +138,7 @@ ModelImporter:
   autoGenerateAvatarMappingIfUnspecified: 1
   animationType: 2
   humanoidOversampling: 1
-  avatarSetup: 0
+  avatarSetup: 1
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
   importBlendShapeDeformPercent: 1
   remapMaterialsIfMaterialImportModeIsNone: 0
@@ -141,10 +146,3 @@ ModelImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 290587
-  packageName: MONS6
-  packageVersion: 1.0
-  assetPath: Assets/MONS 6/FBX/JUMP.fbx
-  uploadId: 678238
