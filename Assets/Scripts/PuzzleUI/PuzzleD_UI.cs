@@ -2,12 +2,16 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// 3x3 toggle puzzle UI.
+/// Generates a hidden target bool[9]; player must match it exactly.
+/// When a cell is turned ON it flashes green/red depending on correctness, then auto-resets after resetDelay.
+/// Solving locks input, cancels timers, and notifies/marks the puzzle panel complete.
 public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
 {
     [Header("World Panel")]
     [SerializeField] private PuzzlePanel_script puzzlePanel;
 
-    [Header("Cells (Toggles) - size 9, top-left to bottom-right")]
+    [Header("Cells (Toggles) ")]
     [SerializeField] private Toggle[] cells = new Toggle[9];
 
     [Header("How many cells in the hidden target should be ON")]
@@ -18,15 +22,13 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
     [SerializeField] private float resetDelay = 1.25f;
 
     private bool[] target;
-
     private static readonly Color BaseColor = HexToColor("585858");
-
     private bool solved = false;
-
     private Coroutine[] resetCoroutines;
 
     private void Awake()
     {
+        /// Cache panel reference, allocate timers, and bind toggle callbacks.
         if (puzzlePanel == null)
             puzzlePanel = GetComponentInParent<PuzzlePanel_script>();
 
@@ -38,13 +40,13 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
     {
         if (cells == null) return;
 
+        /// Disable toggle transitions and bind each toggle to OnCellChanged(index, isOn).
         for (int i = 0; i < cells.Length; i++)
         {
             int idx = i;
             if (cells[idx] == null) continue;
 
             cells[idx].transition = Selectable.Transition.None;
-
             cells[idx].onValueChanged.RemoveAllListeners();
             cells[idx].onValueChanged.AddListener(isOn => OnCellChanged(idx, isOn));
         }
@@ -52,6 +54,7 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
 
     public void ResetPuzzle()
     {
+        /// Stop all pending per-cell reset timers, generate a new random target, and reset UI to all OFF.
         solved = false;
 
         if (cells == null || cells.Length != 9)
@@ -73,7 +76,6 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
         }
 
         target = new bool[9];
-        for (int i = 0; i < 9; i++) target[i] = false;
 
         int placed = 0;
         while (placed < targetOnCount)
@@ -96,6 +98,7 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
 
     private void OnCellChanged(int idx, bool isOn)
     {
+        /// OFF: cancel timer + restore base color. ON: color by correctness + start timer. If solved: lock and notify.
         if (solved) return;
         if (target == null || target.Length != 9) return;
 
@@ -106,8 +109,7 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
             return;
         }
 
-        bool shouldBeOn = target[idx];
-        SetCellColor(idx, shouldBeOn ? Color.green : Color.red);
+        SetCellColor(idx, target[idx] ? Color.green : Color.red);
 
         CancelTimer(idx);
         resetCoroutines[idx] = StartCoroutine(AutoResetCell(idx));
@@ -129,6 +131,7 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
 
     private IEnumerator AutoResetCell(int idx)
     {
+        /// After resetDelay, force the cell back to OFF unless the puzzle was solved.
         yield return new WaitForSeconds(resetDelay);
 
         if (solved) yield break;
@@ -162,12 +165,12 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
 
     private void SetCellColor(int idx, Color c)
     {
+        /// Apply color to Toggle targetGraphic if present, otherwise fallback to an Image on the Toggle.
         if (idx < 0 || idx >= cells.Length) return;
         var t = cells[idx];
         if (t == null) return;
 
-        var g = t.targetGraphic as Graphic;
-        if (g != null)
+        if (t.targetGraphic is Graphic g)
         {
             g.color = c;
             return;
@@ -179,6 +182,7 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
 
     private static Color HexToColor(string hex)
     {
+        /// Convert 6-digit RGB hex to Color; returns gray on invalid input.
         if (string.IsNullOrEmpty(hex)) return Color.gray;
         if (hex[0] == '#') hex = hex.Substring(1);
         if (hex.Length != 6) return Color.gray;

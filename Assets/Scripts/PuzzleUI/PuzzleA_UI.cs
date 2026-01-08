@@ -2,9 +2,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// Left/right node pairing puzzle UI.
+/// Each side is assigned IDs (0..pairCount-1) with matching colors; right side is shuffled.
+/// Player selects a left node, then clicks a right node to create/replace a connection (wire is spawned and colored by left ID).
+/// Wires update every frame to follow node positions. Puzzle is solved when every required left ID is connected to the matching right ID.
 public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 {
-    [Header("World Panel (optional in debug)")]
+    [Header("World Panel")]
     [SerializeField] private PuzzlePanel_script puzzlePanel;
 
     [Header("Parents containing LEFT and RIGHT node buttons")]
@@ -41,17 +45,20 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 
     private void Awake()
     {
+        /// Cache panel reference from parent if not assigned.
         if (puzzlePanel == null)
             puzzlePanel = GetComponentInParent<PuzzlePanel_script>();
     }
 
     private void OnEnable()
     {
+        /// Full reset on open: recache nodes, reassign IDs/colors, reshuffle right side, clear connections.
         ResetPuzzle();
     }
 
     private void OnDisable()
     {
+        /// Clear selection and destroy any spawned wire objects on close.
         selectedLeft = null;
         ClearConnections();
     }
@@ -70,6 +77,7 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 
     private bool ValidateReferences()
     {
+        /// Validate required scene references and wire prefab requirements.
         if (leftPanel == null || rightPanel == null)
         {
             Debug.LogError("PuzzleA_UI: LeftPanel or RightPanel is not assigned.", this);
@@ -96,6 +104,7 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 
     private void CacheNodes()
     {
+        /// Read Button components under left/right panels, clamp pairCount, and wire up click handlers.
         leftNodes.Clear();
         rightNodes.Clear();
         leftId.Clear();
@@ -132,6 +141,7 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 
     private void AssignIdsAndColors()
     {
+        /// Assign IDs to the first pairCount nodes on each side; extra nodes get id = -1 (grey).
         for (int i = 0; i < leftNodes.Count; i++)
         {
             int id = (i < pairCount) ? i : -1;
@@ -149,6 +159,7 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 
     private void ShuffleRightSidePositions()
     {
+        /// Shuffle right-side sibling order; try to avoid leaving the original ID order unchanged.
         if (rightNodes.Count <= 1) return;
 
         List<int> original = new List<int>(rightNodes.Count);
@@ -177,6 +188,7 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
                 return;
         }
 
+        /// Fallback: force a visible change by swapping first two children.
         if (rightPanel.childCount >= 2)
         {
             Transform a = rightPanel.GetChild(0);
@@ -197,9 +209,9 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
         return true;
     }
 
-
     private void OnLeftClicked(Button left)
     {
+        /// Toggle left selection and show it via Outline enabled state.
         selectedLeft = (selectedLeft == left) ? null : left;
 
         for (int i = 0; i < leftNodes.Count; i++)
@@ -211,6 +223,7 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 
     private void OnRightClicked(Button right)
     {
+        /// If a left node is selected, connect it to this right node and check solve state.
         if (selectedLeft == null) return;
 
         Connect(selectedLeft, right);
@@ -218,11 +231,12 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 
         if (IsSolved())
             PuzzleUIDebugLauncher.Instance?.NotifyPuzzleSolved("PuzzleA");
-            puzzlePanel?.MarkCompleted();
+        puzzlePanel?.MarkCompleted();
     }
 
     private void Connect(Button left, Button right)
     {
+        /// Replace existing connection from left (and destroy its wire), then create a new wire to right.
         if (connections.TryGetValue(left, out var oldRight))
         {
             connections.Remove(left);
@@ -249,6 +263,7 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 
     private void ClearConnections()
     {
+        /// Remove all logical connections and destroy all spawned wire objects.
         connections.Clear();
 
         foreach (var kv in connectionWires)
@@ -259,6 +274,7 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 
     private void Update()
     {
+        /// Keep all wires aligned with their endpoint node rects.
         foreach (var kv in connections)
         {
             var left = kv.Key;
@@ -273,6 +289,7 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 
     private bool IsSolved()
     {
+        /// Solved when every left node with a valid ID is connected to a right node with the same ID.
         int needed = 0;
 
         foreach (var left in leftNodes)
@@ -313,6 +330,7 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 
     private void UpdateWireTransform(RectTransform wire, RectTransform a, RectTransform b)
     {
+        /// Position the wire at A, scale X to match distance to B, and rotate to face B.
         Vector2 aLocal = WorldCenterToLocal(a, wiresParent);
         Vector2 bLocal = WorldCenterToLocal(b, wiresParent);
 
@@ -334,3 +352,4 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
         return local;
     }
 }
+

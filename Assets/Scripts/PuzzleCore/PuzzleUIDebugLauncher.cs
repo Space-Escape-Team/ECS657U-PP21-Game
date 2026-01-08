@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// Debug-only launcher for opening/closing puzzle UI roots via keyboard.
+/// 1-4 opens PuzzleA-D, R resets the currently open puzzle, and the Gameplay.Cancel action closes the current puzzle.
+/// Tracks last completion via NotifyPuzzleSolved for inspector/debug visibility.
 public class PuzzleUIDebugLauncher : MonoBehaviour
 {
     [Header("Puzzle UI Roots")]
@@ -20,6 +23,7 @@ public class PuzzleUIDebugLauncher : MonoBehaviour
 
     private void Awake()
     {
+        /// Singleton instance setup and input binding for Cancel -> CloseCurrent.
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -33,6 +37,7 @@ public class PuzzleUIDebugLauncher : MonoBehaviour
 
     private void OnEnable()
     {
+        /// Enable input and ensure all puzzle roots start closed.
         controls.Enable();
         CloseAll();
     }
@@ -44,6 +49,7 @@ public class PuzzleUIDebugLauncher : MonoBehaviour
 
     private void Update()
     {
+        /// Keyboard shortcuts: 1-4 open puzzles, R resets current.
         var kb = Keyboard.current;
         if (kb == null) return;
 
@@ -57,6 +63,7 @@ public class PuzzleUIDebugLauncher : MonoBehaviour
 
     private void Open(GameObject target, string puzzleName)
     {
+        /// Close any open puzzle, clear debug completion state, then activate the requested puzzle and reset it.
         if (target == null) return;
 
         CloseCurrent();
@@ -74,6 +81,7 @@ public class PuzzleUIDebugLauncher : MonoBehaviour
 
     private void CloseCurrent()
     {
+        /// Reset then deactivate the currently open puzzle root.
         if (currentPuzzle == null) return;
 
         ResetCurrent();
@@ -83,6 +91,7 @@ public class PuzzleUIDebugLauncher : MonoBehaviour
 
     private void ResetCurrent()
     {
+        /// Call ResetPuzzle() on the first IPuzzleUI found under the active puzzle root.
         if (currentPuzzle == null) return;
 
         var puzzle = currentPuzzle.GetComponentInChildren<IPuzzleUI>(true);
@@ -91,6 +100,7 @@ public class PuzzleUIDebugLauncher : MonoBehaviour
 
     private void CloseAll()
     {
+        /// Deactivate all puzzle roots and clear current selection.
         if (puzzleA) puzzleA.SetActive(false);
         if (puzzleB) puzzleB.SetActive(false);
         if (puzzleC) puzzleC.SetActive(false);
@@ -101,6 +111,7 @@ public class PuzzleUIDebugLauncher : MonoBehaviour
 
     public void NotifyPuzzleSolved(string puzzleName)
     {
+        /// Called by puzzles to record completion state for debugging/logging.
         puzzleCompleted = true;
         lastCompletedPuzzle = puzzleName;
 

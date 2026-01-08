@@ -2,6 +2,8 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.InputSystem;
 
+/// Handles player interaction with world puzzles via raycast.
+/// Shows an on-screen prompt when looking at a puzzle, opens it on Interact, and closes it on Cancel.
 public class PlayerPuzzleInteractor : MonoBehaviour
 {
     [Header("Interaction Settings")]
@@ -18,6 +20,7 @@ public class PlayerPuzzleInteractor : MonoBehaviour
 
     private void Awake()
     {
+        /// Cache main camera, set up input bindings for interact/cancel.
         cam = Camera.main;
         controls = new Controls();
 
@@ -35,6 +38,7 @@ public class PlayerPuzzleInteractor : MonoBehaviour
 
     private void HandlePuzzlePrompt()
     {
+        /// Raycast forward to detect puzzles in range and on the puzzle layer.
         Ray ray = new Ray(cam.transform.position, cam.transform.forward);
 
         if (Physics.Raycast(ray, out RaycastHit hit, interactionRange, puzzleLayer))
@@ -46,18 +50,20 @@ public class PlayerPuzzleInteractor : MonoBehaviour
                 if (puzzle != currentPuzzle)
                 {
                     currentPuzzle = puzzle;
-                    ShowPrompt(puzzle.puzzlePrompt); // use string defined in Puzzle_script
+                    ShowPrompt(puzzle.puzzlePrompt);
                 }
                 return;
             }
         }
 
+        /// Clear prompt when not looking at a valid puzzle.
         HidePrompt();
         currentPuzzle = null;
     }
 
     private void TryInteract()
     {
+        /// Attempt to open the currently targeted puzzle.
         if (currentPuzzle != null)
         {
             currentPuzzle.TryOpenPuzzle();
@@ -67,9 +73,10 @@ public class PlayerPuzzleInteractor : MonoBehaviour
 
     private void TryCancel()
     {
+        /// Forward cancel input to the active puzzle, if any.
         if (currentPuzzle != null)
             currentPuzzle.TryClosePuzzle();
-    } 
+    }
 
     private void ShowPrompt(string message)
     {
