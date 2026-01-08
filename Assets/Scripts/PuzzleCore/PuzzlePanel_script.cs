@@ -9,16 +9,22 @@ public class PuzzlePanel_script : Puzzle_script
 
     public override void TryOpenPuzzle()
     {
-        if (isCompleted) return; // optional lock-out after solved
+        if (isCompleted) return;
         base.TryOpenPuzzle();
     }
 
     public void MarkCompleted()
     {
         if (isCompleted) return;
+
         isCompleted = true;
 
-        // closing will also reset UI state (per spec)
-        TryClosePuzzle();
+        Debug.Log($"[PUZZLE COMPLETE] {gameObject.name} marked complete.", this);
+    }
+
+    [ContextMenu("DEBUG: Mark Completed Now")]
+    private void DebugMarkCompletedNow()
+    {
+        MarkCompleted();
     }
 }

@@ -9,7 +9,7 @@ public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
     [Header("Sliders (size 3)")]
     [SerializeField] private Slider[] sliders = new Slider[3];
 
-    [Header("Indicators (size 3) - place to RIGHT of each slider row")]
+    [Header("Indicators (size 3) - placed to RIGHT of each slider row")]
     [SerializeField] private Image[] indicators = new Image[3];
 
     [Header("Tolerance")]
@@ -20,33 +20,49 @@ public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
 
     private static readonly Color IndicatorOff = new Color(0.70f, 0.70f, 0.70f, 1f);
 
+    private bool solved = false;
+
     private void Awake()
     {
         if (puzzlePanel == null)
             puzzlePanel = GetComponentInParent<PuzzlePanel_script>();
 
-        if (sliders != null)
-        {
-            for (int i = 0; i < sliders.Length; i++)
-            {
-                int idx = i;
-                if (sliders[idx] == null) continue;
+        HookSliders();
+    }
 
-                sliders[idx].onValueChanged.RemoveAllListeners();
-                sliders[idx].onValueChanged.AddListener(_ => OnSliderChanged(idx));
-            }
+    private void OnEnable()
+    {
+
+        if (!solved)
+            UpdateAllIndicators();
+    }
+
+    private void HookSliders()
+    {
+        if (sliders == null) return;
+
+        for (int i = 0; i < sliders.Length; i++)
+        {
+            int idx = i;
+            if (sliders[idx] == null) continue;
+
+            sliders[idx].onValueChanged.RemoveAllListeners();
+            sliders[idx].onValueChanged.AddListener(_ => OnSliderChanged(idx));
         }
     }
 
     public void ResetPuzzle()
     {
+        solved = false;
+
         for (int i = 0; i < 3; i++)
             targets[i] = Random.value;
 
         for (int i = 0; i < sliders.Length; i++)
         {
             if (sliders[i] == null) continue;
-            sliders[i].value = 0.5f;
+            sliders[i].interactable = true;
+            sliders[i].SetValueWithoutNotify(0.5f);
         }
 
         UpdateAllIndicators();
@@ -55,6 +71,8 @@ public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
 
     private void OnSliderChanged(int idx)
     {
+        if (solved) return;
+
         UpdateIndicator(idx);
         CheckSolved();
     }
@@ -77,12 +95,25 @@ public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
 
     private void CheckSolved()
     {
+        if (solved) return;
+
         for (int i = 0; i < 3; i++)
         {
             if (sliders[i] == null) return;
             if (Mathf.Abs(sliders[i].value - targets[i]) > tolerance) return;
         }
 
+        solved = true;
+
+        for (int i = 0; i < sliders.Length; i++)
+        {
+            if (sliders[i] == null) continue;
+            sliders[i].interactable = false;
+        }
+
+        UpdateAllIndicators();
+        Debug.Log("[PUZZLE SOLVED] PuzzleC solved", this);
         puzzlePanel?.MarkCompleted();
+        PuzzleUIDebugLauncher.Instance?.NotifyPuzzleSolved("PuzzleC");
     }
 }

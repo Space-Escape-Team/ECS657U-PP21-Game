@@ -4,10 +4,10 @@ using UnityEngine.UI;
 
 public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
 {
-    [Header("World Panel")]
+    [Header("World Panel (optional in debug)")]
     [SerializeField] private PuzzlePanel_script puzzlePanel;
 
-    [Header("Panels (parents containing the node buttons)")]
+    [Header("Parents containing LEFT and RIGHT node buttons")]
     [SerializeField] private Transform leftPanel;
     [SerializeField] private Transform rightPanel;
 
@@ -18,6 +18,7 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
     [Header("Pairs")]
     [SerializeField] private int pairCount = 4;
 
+    [Header("ID -> Color (index = ID)")]
     [SerializeField]
     private Color[] idColors =
     {
@@ -34,7 +35,7 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
     private readonly Dictionary<Button, int> rightId = new();
 
     private readonly Dictionary<Button, Button> connections = new();
-    private readonly Dictionary<Button, RectTransform> wires = new();
+    private readonly Dictionary<Button, RectTransform> connectionWires = new();
 
     private Button selectedLeft;
 
@@ -44,13 +45,9 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
             puzzlePanel = GetComponentInParent<PuzzlePanel_script>();
     }
 
-    public void ResetPuzzle()
+    private void OnEnable()
     {
-        selectedLeft = null;
-        CacheNodes();
-        AssignIdsAndColors();
-        ShuffleRightSidePositions();
-        ClearConnections();
+        ResetPuzzle();
     }
 
     private void OnDisable()
@@ -59,18 +56,42 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
         ClearConnections();
     }
 
-    private void Update()
+    public void ResetPuzzle()
     {
-        foreach (var kv in connections)
+        if (!ValidateReferences())
+            return;
+
+        CacheNodes();
+        AssignIdsAndColors();
+        ShuffleRightSidePositions();
+        ClearConnections();
+        selectedLeft = null;
+    }
+
+    private bool ValidateReferences()
+    {
+        if (leftPanel == null || rightPanel == null)
         {
-            Button left = kv.Key;
-            Button right = kv.Value;
-
-            if (left == null || right == null) continue;
-            if (!wires.TryGetValue(left, out var wire) || wire == null) continue;
-
-            UpdateWireTransform(wire, left.GetComponent<RectTransform>(), right.GetComponent<RectTransform>());
+            Debug.LogError("PuzzleA_UI: LeftPanel or RightPanel is not assigned.", this);
+            return false;
         }
+        if (wiresParent == null || wirePrefab == null)
+        {
+            Debug.LogError("PuzzleA_UI: WiresParent or WirePrefab is not assigned.", this);
+            return false;
+        }
+
+        var img = wirePrefab.GetComponent<Image>();
+        if (img == null)
+        {
+            Debug.LogError("PuzzleA_UI: WirePrefab must have an Image component.", this);
+            return false;
+        }
+
+        if (wirePrefab.pivot.x > 0.01f || Mathf.Abs(wirePrefab.pivot.y - 0.5f) > 0.01f)
+            Debug.LogWarning("PuzzleA_UI: WirePrefab pivot should be (0, 0.5) for correct wire placement.", this);
+
+        return true;
     }
 
     private void CacheNodes()
@@ -97,51 +118,95 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
         for (int i = 0; i < leftNodes.Count; i++)
         {
             int idx = i;
-            leftNodes[i].onClick.RemoveAllListeners();
-            leftNodes[i].onClick.AddListener(() => OnLeftClicked(leftNodes[idx]));
+            leftNodes[idx].onClick.RemoveAllListeners();
+            leftNodes[idx].onClick.AddListener(() => OnLeftClicked(leftNodes[idx]));
         }
 
         for (int i = 0; i < rightNodes.Count; i++)
         {
             int idx = i;
-            rightNodes[i].onClick.RemoveAllListeners();
-            rightNodes[i].onClick.AddListener(() => OnRightClicked(rightNodes[idx]));
+            rightNodes[idx].onClick.RemoveAllListeners();
+            rightNodes[idx].onClick.AddListener(() => OnRightClicked(rightNodes[idx]));
         }
     }
 
     private void AssignIdsAndColors()
     {
-
         for (int i = 0; i < leftNodes.Count; i++)
         {
-            var btn = leftNodes[i];
-            int id = i < pairCount ? i : -1;
-            leftId[btn] = id;
-            SetNodeColor(btn, GetColorForId(id));
+            int id = (i < pairCount) ? i : -1;
+            leftId[leftNodes[i]] = id;
+            SetNodeColor(leftNodes[i], GetColorForId(id));
         }
 
         for (int i = 0; i < rightNodes.Count; i++)
         {
-            var btn = rightNodes[i];
-            int id = i < pairCount ? i : -1;
-            rightId[btn] = id;
-            SetNodeColor(btn, GetColorForId(id));
+            int id = (i < pairCount) ? i : -1;
+            rightId[rightNodes[i]] = id;
+            SetNodeColor(rightNodes[i], GetColorForId(id));
         }
     }
 
     private void ShuffleRightSidePositions()
     {
+        if (rightNodes.Count <= 1) return;
 
-        for (int i = 0; i < rightPanel.childCount; i++)
+        List<int> original = new List<int>(rightNodes.Count);
+        for (int i = 0; i < rightNodes.Count; i++)
+            original.Add(rightId.TryGetValue(rightNodes[i], out int id) ? id : -999);
+
+        const int maxAttempts = 20;
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
         {
-            int j = Random.Range(i, rightPanel.childCount);
-            rightPanel.GetChild(j).SetSiblingIndex(i);
+            for (int i = 0; i < rightPanel.childCount; i++)
+            {
+                int j = Random.Range(i, rightPanel.childCount);
+                rightPanel.GetChild(j).SetSiblingIndex(i);
+            }
+
+            List<int> current = new List<int>(rightNodes.Count);
+            for (int i = 0; i < rightPanel.childCount; i++)
+            {
+                var btn = rightPanel.GetChild(i).GetComponent<Button>();
+                if (btn == null) continue;
+                current.Add(rightId.TryGetValue(btn, out int id) ? id : -999);
+            }
+
+            if (!IsSameOrder(original, current))
+                return;
+        }
+
+        if (rightPanel.childCount >= 2)
+        {
+            Transform a = rightPanel.GetChild(0);
+            Transform b = rightPanel.GetChild(1);
+            int aIndex = a.GetSiblingIndex();
+            int bIndex = b.GetSiblingIndex();
+            a.SetSiblingIndex(bIndex);
+            b.SetSiblingIndex(aIndex);
         }
     }
 
+    private bool IsSameOrder(List<int> a, List<int> b)
+    {
+        if (a == null || b == null) return false;
+        if (a.Count != b.Count) return false;
+        for (int i = 0; i < a.Count; i++)
+            if (a[i] != b[i]) return false;
+        return true;
+    }
+
+
     private void OnLeftClicked(Button left)
     {
-        selectedLeft = left;
+        selectedLeft = (selectedLeft == left) ? null : left;
+
+        for (int i = 0; i < leftNodes.Count; i++)
+        {
+            var o = leftNodes[i].GetComponent<Outline>();
+            if (o) o.enabled = (leftNodes[i] == selectedLeft);
+        }
     }
 
     private void OnRightClicked(Button right)
@@ -151,7 +216,8 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
         Connect(selectedLeft, right);
         selectedLeft = null;
 
-        if (CheckSolved())
+        if (IsSolved())
+            PuzzleUIDebugLauncher.Instance?.NotifyPuzzleSolved("PuzzleA");
             puzzlePanel?.MarkCompleted();
     }
 
@@ -161,10 +227,10 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
         {
             connections.Remove(left);
 
-            if (wires.TryGetValue(left, out var oldWire) && oldWire != null)
+            if (connectionWires.TryGetValue(left, out var oldWire) && oldWire != null)
                 Destroy(oldWire.gameObject);
 
-            wires.Remove(left);
+            connectionWires.Remove(left);
         }
 
         connections[left] = right;
@@ -173,10 +239,10 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
         wire.gameObject.SetActive(true);
 
         var img = wire.GetComponent<Image>();
-        if (img != null)
-            img.color = GetColorForId(leftId[left]);
+        if (img != null && leftId.TryGetValue(left, out int lid))
+            img.color = GetColorForId(lid);
 
-        wires[left] = wire;
+        connectionWires[left] = wire;
 
         UpdateWireTransform(wire, left.GetComponent<RectTransform>(), right.GetComponent<RectTransform>());
     }
@@ -185,45 +251,64 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
     {
         connections.Clear();
 
-        foreach (var kv in wires)
-        {
-            if (kv.Value != null)
-                Destroy(kv.Value.gameObject);
-        }
-        wires.Clear();
+        foreach (var kv in connectionWires)
+            if (kv.Value != null) Destroy(kv.Value.gameObject);
+
+        connectionWires.Clear();
     }
 
-    private bool CheckSolved()
+    private void Update()
     {
-        int connected = 0;
+        foreach (var kv in connections)
+        {
+            var left = kv.Key;
+            var right = kv.Value;
+            if (left == null || right == null) continue;
+
+            if (!connectionWires.TryGetValue(left, out var wire) || wire == null) continue;
+
+            UpdateWireTransform(wire, left.GetComponent<RectTransform>(), right.GetComponent<RectTransform>());
+        }
+    }
+
+    private bool IsSolved()
+    {
+        int needed = 0;
 
         foreach (var left in leftNodes)
         {
-            if (!leftId.TryGetValue(left, out int id)) continue;
-            if (id < 0 || id >= pairCount) continue;
+            if (!leftId.TryGetValue(left, out int lid)) continue;
+            if (lid < 0 || lid >= pairCount) continue;
 
-            connected++;
+            needed++;
 
             if (!connections.TryGetValue(left, out var right)) return false;
             if (!rightId.TryGetValue(right, out int rid)) return false;
 
-            if (id != rid) return false;
+            if (lid != rid) return false;
         }
 
-        return connected == pairCount;
-    }
-
-    private Color GetColorForId(int id)
-    {
-        if (id < 0) return Color.gray;
-        if (idColors != null && id < idColors.Length) return idColors[id];
-        return Color.white;
+        return needed == pairCount;
     }
 
     private void SetNodeColor(Button btn, Color c)
     {
         var img = btn.GetComponent<Image>();
-        if (img != null) img.color = c;
+        if (img != null)
+        {
+            img.color = c;
+            return;
+        }
+
+        var childImg = btn.GetComponentInChildren<Image>();
+        if (childImg != null) childImg.color = c;
+    }
+
+    private Color GetColorForId(int id)
+    {
+        if (id < 0) return new Color(0.5f, 0.5f, 0.5f, 1f);
+        if (idColors != null && id < idColors.Length) return idColors[id];
+        return Color.white;
     }
 
     private void UpdateWireTransform(RectTransform wire, RectTransform a, RectTransform b)

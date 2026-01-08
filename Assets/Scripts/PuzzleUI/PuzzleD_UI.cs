@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,17 +14,23 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
     [Range(1, 9)]
     [SerializeField] private int targetOnCount = 4;
 
+    [Header("Timed reset")]
+    [SerializeField] private float resetDelay = 1.25f;
+
     private bool[] target;
 
     private static readonly Color BaseColor = HexToColor("585858");
 
     private bool solved = false;
 
+    private Coroutine[] resetCoroutines;
+
     private void Awake()
     {
         if (puzzlePanel == null)
             puzzlePanel = GetComponentInParent<PuzzlePanel_script>();
 
+        resetCoroutines = new Coroutine[9];
         HookCells();
     }
 
@@ -35,6 +42,8 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
         {
             int idx = i;
             if (cells[idx] == null) continue;
+
+            cells[idx].transition = Selectable.Transition.None;
 
             cells[idx].onValueChanged.RemoveAllListeners();
             cells[idx].onValueChanged.AddListener(isOn => OnCellChanged(idx, isOn));
@@ -49,6 +58,18 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
         {
             Debug.LogWarning("PuzzleD_UI: Cells must be size 9.");
             return;
+        }
+
+        if (resetCoroutines == null || resetCoroutines.Length != 9)
+            resetCoroutines = new Coroutine[9];
+
+        for (int i = 0; i < 9; i++)
+        {
+            if (resetCoroutines[i] != null)
+            {
+                StopCoroutine(resetCoroutines[i]);
+                resetCoroutines[i] = null;
+            }
         }
 
         target = new bool[9];
@@ -80,6 +101,7 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
 
         if (!isOn)
         {
+            CancelTimer(idx);
             SetCellColor(idx, BaseColor);
             return;
         }
@@ -87,14 +109,44 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
         bool shouldBeOn = target[idx];
         SetCellColor(idx, shouldBeOn ? Color.green : Color.red);
 
+        CancelTimer(idx);
+        resetCoroutines[idx] = StartCoroutine(AutoResetCell(idx));
+
         if (IsSolved())
         {
             solved = true;
 
             for (int i = 0; i < 9; i++)
+            {
                 cells[i].interactable = false;
+                CancelTimer(i);
+            }
 
+            PuzzleUIDebugLauncher.Instance?.NotifyPuzzleSolved("PuzzleD");
             puzzlePanel?.MarkCompleted();
+        }
+    }
+
+    private IEnumerator AutoResetCell(int idx)
+    {
+        yield return new WaitForSeconds(resetDelay);
+
+        if (solved) yield break;
+        if (idx < 0 || idx >= cells.Length || cells[idx] == null) yield break;
+
+        cells[idx].SetIsOnWithoutNotify(false);
+        SetCellColor(idx, BaseColor);
+        resetCoroutines[idx] = null;
+    }
+
+    private void CancelTimer(int idx)
+    {
+        if (idx < 0 || idx >= resetCoroutines.Length) return;
+
+        if (resetCoroutines[idx] != null)
+        {
+            StopCoroutine(resetCoroutines[idx]);
+            resetCoroutines[idx] = null;
         }
     }
 
@@ -114,7 +166,7 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
         var t = cells[idx];
         if (t == null) return;
 
-        var g = t.targetGraphic as Image;
+        var g = t.targetGraphic as Graphic;
         if (g != null)
         {
             g.color = c;
@@ -129,7 +181,6 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
     {
         if (string.IsNullOrEmpty(hex)) return Color.gray;
         if (hex[0] == '#') hex = hex.Substring(1);
-
         if (hex.Length != 6) return Color.gray;
 
         byte r = byte.Parse(hex.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);

@@ -14,13 +14,12 @@ public class Puzzle_script : MonoBehaviour
     protected bool playerInRange = false;
     protected bool puzzleActive = false;
 
-    protected IPuzzleUI puzzleUI; // optional, discovered from UI root
+    protected IPuzzleUI puzzleUI;
 
     protected virtual void Awake()
     {
         controls = new Controls();
 
-        // Input wiring
         controls.Gameplay.Interact.performed += _ => TryOpenPuzzle();
         controls.Gameplay.Cancel.performed += _ => TryClosePuzzle();
 
@@ -40,7 +39,6 @@ public class Puzzle_script : MonoBehaviour
             puzzleUI = puzzleUIScreen.GetComponentInChildren<IPuzzleUI>(true);
     }
 
-    // Trigger fallback (works even if you also have a separate interactor)
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
@@ -72,7 +70,7 @@ public class Puzzle_script : MonoBehaviour
         if (puzzleUIScreen == null) return;
 
         CachePuzzleUI();
-        puzzleUI?.ResetPuzzle();      // reset on open
+        puzzleUI?.ResetPuzzle();
 
         puzzleUIScreen.SetActive(true);
         puzzleActive = true;
@@ -82,7 +80,6 @@ public class Puzzle_script : MonoBehaviour
     {
         if (puzzleUIScreen == null) return;
 
-        // reset on leaving
         puzzleUI?.ResetPuzzle();
 
         puzzleUIScreen.SetActive(false);

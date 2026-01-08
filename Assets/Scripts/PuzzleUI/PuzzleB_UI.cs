@@ -31,6 +31,14 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
         WireButtons();
     }
 
+    private void OnEnable()
+    {
+        if (sequence.Count == 0)
+            ResetPuzzle();
+        else
+            ResetProgressOnly();
+    }
+
     private void WireButtons()
     {
         if (buttons == null) return;
@@ -47,11 +55,21 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
 
     public void ResetPuzzle()
     {
-        index = 0;
+        GenerateNewSequence();
+        ResetProgressOnly();
+    }
+
+    private void GenerateNewSequence()
+    {
         sequence.Clear();
 
         for (int i = 0; i < sequenceLength; i++)
             sequence.Add(Random.Range(0, buttons.Length));
+    }
+
+    private void ResetProgressOnly()
+    {
+        index = 0;
 
         foreach (var b in buttons)
             if (b != null) b.interactable = true;
@@ -73,13 +91,14 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
 
             if (index >= sequence.Count)
             {
+                PuzzleUIDebugLauncher.Instance?.NotifyPuzzleSolved("PuzzleB");
                 puzzlePanel?.MarkCompleted();
             }
         }
         else
         {
             StartCoroutine(Flash(buttons[id], Color.red));
-            ResetPuzzle();
+            ResetProgressOnly();
         }
     }
 
@@ -100,7 +119,8 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
     {
         if (b == null) yield break;
 
-        var img = b.GetComponent<Image>();
+        var img = b.targetGraphic as Image;
+        if (img == null) img = b.GetComponent<Image>();
         if (img == null) yield break;
 
         Color original = img.color;
