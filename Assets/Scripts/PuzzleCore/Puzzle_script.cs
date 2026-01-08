@@ -10,7 +10,7 @@ public class Puzzle_script : MonoBehaviour
     [Header("Puzzle UI")]
     [SerializeField] protected GameObject puzzleUIScreen;
 
-    [Header("Camera Lock (optional)")]
+    [Header("Camera Lock")]
     [SerializeField] private FirstPersonCameraController cameraController;
 
     protected bool playerInRange = false;
