@@ -214,6 +214,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "ToggleAlbum",
+                    "type": "Button",
+                    "id": "37220d80-0381-47d9-bda8-bb4fc76784db",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -236,6 +245,17 @@
                     "processors": "",
                     "groups": "KB+Mouse",
                     "action": "Capture",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ff9d4886-d8e9-496f-9e55-c8e79e5097e5",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KB+Mouse",
+                    "action": "ToggleAlbum",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
