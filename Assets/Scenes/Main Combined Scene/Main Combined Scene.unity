@@ -308,6 +308,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 5537015055850764, guid: 4b11543ed6a64ff49aa093efe19fc252, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3678077509304720152, guid: 4b11543ed6a64ff49aa093efe19fc252, type: 3}
       propertyPath: m_Name
       value: PuzzleUIScreen
@@ -4653,6 +4657,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 464192654}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2072982998 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8300356145799864586, guid: 4b11543ed6a64ff49aa093efe19fc252, type: 3}
+  m_PrefabInstance: {fileID: 80223181}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2083515254
 GameObject:
   m_ObjectHideFlags: 0
@@ -4667,9 +4676,8 @@ GameObject:
   - component: {fileID: 2083515256}
   - component: {fileID: 2083515261}
   - component: {fileID: 2083515255}
-  - component: {fileID: 2083515260}
   m_Layer: 6
-  m_Name: Puzzle Box
+  m_Name: Puzzle BoxA
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4687,7 +4695,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f121a02d12c4ab4cbf836bb4421ad30, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  puzzleUIScreen: {fileID: 0}
+  puzzleUIScreen: {fileID: 2072982998}
   puzzlePrompt: Press E to interact
   isCompleted: 0
 --- !u!65 &2083515256
@@ -4776,18 +4784,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2083515260
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2083515254}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b73bda5a0f4722844964853126b135d3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!54 &2083515261
 Rigidbody:
   m_ObjectHideFlags: 0

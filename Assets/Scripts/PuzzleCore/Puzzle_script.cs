@@ -5,11 +5,14 @@ public class Puzzle_script : MonoBehaviour
 {
     protected Controls controls;
 
-    [Header("Puzzle UI (Canvas GameObject to toggle)")]
+    [Header("Puzzle UI")]
     [SerializeField] protected GameObject puzzleUIScreen;
 
-    [Header("Prompt Text (for your prompt system)")]
+    [Header("Prompt Text")]
     [SerializeField] public string puzzlePrompt = "Press E to interact";
+
+    [Header("Player Lock")]
+    [SerializeField] private PlayerUIModeLock playerLock;
 
     protected bool playerInRange = false;
     protected bool puzzleActive = false;
@@ -27,6 +30,13 @@ public class Puzzle_script : MonoBehaviour
 
         if (puzzleUIScreen != null)
             puzzleUIScreen.SetActive(false);
+
+        if (playerLock == null)
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+                playerLock = player.GetComponent<PlayerUIModeLock>();
+        }
     }
 
     protected virtual void OnEnable() => controls.Enable();
@@ -72,6 +82,8 @@ public class Puzzle_script : MonoBehaviour
         CachePuzzleUI();
         puzzleUI?.ResetPuzzle();
 
+        playerLock?.EnterPuzzleMode();
+
         puzzleUIScreen.SetActive(true);
         puzzleActive = true;
     }
@@ -84,5 +96,7 @@ public class Puzzle_script : MonoBehaviour
 
         puzzleUIScreen.SetActive(false);
         puzzleActive = false;
+
+        playerLock?.ExitPuzzleMode();
     }
 }
