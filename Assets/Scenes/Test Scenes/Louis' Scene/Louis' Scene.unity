@@ -1064,7 +1064,6 @@ GameObject:
   m_Component:
   - component: {fileID: 646857919}
   - component: {fileID: 646857918}
-  - component: {fileID: 646857917}
   m_Layer: 0
   m_Name: HealthBar
   m_TagString: Untagged
@@ -1072,21 +1071,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &646857917
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 646857916}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cbfb96e948f2f5c46adb8d53b1efe032, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxHealth: 100
-  currentHealth: 0
-  healthBarSlider: {fileID: 646857918}
 --- !u!114 &646857918
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2481,6 +2465,7 @@ GameObject:
   - component: {fileID: 1503134415}
   - component: {fileID: 1503134410}
   - component: {fileID: 1503134409}
+  - component: {fileID: 1503134416}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -2556,7 +2541,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5876ecfcb8317484e8ff1b06133845d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerHealth: {fileID: 646857917}
+  playerHealth: {fileID: 0}
   playerPuzzleInteractor: {fileID: 0}
   times_completed: 0
 --- !u!114 &1503134412
@@ -2652,6 +2637,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   difficulty: 2
+--- !u!114 &1503134416
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1503134407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbfb96e948f2f5c46adb8d53b1efe032, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  currentHealth: 100
+  healthBarSlider: {fileID: 646857918}
 --- !u!1 &1505834492
 GameObject:
   m_ObjectHideFlags: 0
@@ -3959,7 +3959,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   timerText: {fileID: 2141138804}
-  playerHealth: {fileID: 646857917}
+  playerHealth: {fileID: 0}
 --- !u!114 &2141138804
 MonoBehaviour:
   m_ObjectHideFlags: 0
