@@ -13,6 +13,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Configurables")]
     public float moveSpeed = 3f; // Default walk speed
     public float cameraTransitionSpeed = 5f;
+    public float proneTurnSpeed = 45f;
 
     [Header("References")]
     public Transform orientation;
@@ -72,9 +73,23 @@ public class PlayerMovement : MonoBehaviour
     void Update()
     {
         input = move.action.ReadValue<Vector2>();
+        var cam = FindFirstObjectByType<FirstPersonCameraController>();
 
-        // Change only horizontal direction based on camera
-        moveDirection = (orientation.forward * input.y + orientation.right * input.x).normalized;
+        if (cam != null)
+        {
+            cam.proneTurnInput = isProne ? input.x : 0f;
+        }
+
+        if (isProne)
+        {
+            // Disable strafing while prone
+            moveDirection = (orientation.forward * input.y).normalized;
+        }
+        else
+        {
+            moveDirection = (orientation.forward * input.y + orientation.right * input.x).normalized;
+        }
+
         moveDirection.y = 0;
 
         UpdateAnimations();

@@ -20,6 +20,8 @@ public class FirstPersonCameraController : MonoBehaviour
     public float proneMinPitch = -5f;
     public float proneMaxPitch = 25f;
     public float proneSensMultiplier = 0.5f;
+    public float proneTurnSpeed = 45f;
+    [HideInInspector] public float proneTurnInput;
 
     void Start()
     {
@@ -56,6 +58,11 @@ public class FirstPersonCameraController : MonoBehaviour
             xRotation = Mathf.Clamp(xRotation, proneMinPitch, proneMaxPitch);
         }
         xRotation = Mathf.Clamp(xRotation, -90f, 63f);
+
+        if (isProne && Mathf.Abs(proneTurnInput) > 0.1f)
+        {
+            yRotation += proneTurnInput * proneTurnSpeed * Time.deltaTime;
+        }
 
         transform.rotation = Quaternion.Euler(xRotation, yRotation, 0); // Rotate camera along both axes
         orientation.transform.rotation = Quaternion.Euler(0, yRotation, 0); // Rotate player along y axis
