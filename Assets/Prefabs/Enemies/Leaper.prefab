@@ -600,6 +600,7 @@ GameObject:
   - component: {fileID: 5233960898083427303}
   - component: {fileID: 6098996137704352538}
   - component: {fileID: 4339565163172074701}
+  - component: {fileID: 4495180649062048220}
   m_Layer: 0
   m_Name: Leaper
   m_TagString: Untagged
@@ -684,26 +685,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 0}
-  wanderRadius: 50
-  wanderInterval: 15
+  minAwarenessRadius: 25
+  maxAwarenessRadius: 75
+  minWanderRadius: 25
+  maxWanderRadius: 75
+  minWanderInterval: 10
+  maxWanderInterval: 20
   dwellMin: 5
   dwellMax: 10
   wanderSampleRadius: 10
-  turnSpeed: 5000
-  animator: {fileID: 0}
-  leaperAwarenessRadius: 50
-  leaperWaitAtLastKnownMin: 5
-  leaperWaitAtLastKnownMax: 10
-  leaperHopDistance: 5
-  leaperHopDuration: 0.5
-  leaperHopCooldown: 1
-  leaperHopArcHeight: 1
-  leaperArriveDistance: 1
-  leaperTurnSpeed: 900
-  leaperHopSampleRadius: 2
+  hopSampleRadius: 2
+  minHopDistance: 5
+  maxHopDistance: 10
+  hopDuration: 0.5
+  hopArcHeight: 1
+  minHopCooldown: 0.3
+  maxHopCooldown: 1
+  hopTurnSpeed: 900
+  arriveDistance: 1
   attackRange: 5
-  attackDamage: 25
   attackInterval: 3
+  animator: {fileID: 0}
+  difficulty: 0
 --- !u!195 &4339565163172074701
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -726,6 +729,28 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!95 &4495180649062048220
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2031782933507881860}
+  m_Enabled: 1
+  m_Avatar: {fileID: 9000000, guid: 80f171f2c000f3a498027c34fc7e8ee1, type: 3}
+  m_Controller: {fileID: 9100000, guid: c3b8d66aa7cd19143afe3f909c357706, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &2079299339248224546
 GameObject:
   m_ObjectHideFlags: 0

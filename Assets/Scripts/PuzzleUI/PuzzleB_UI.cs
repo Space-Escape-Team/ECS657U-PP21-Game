@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
+/// 4-button sequence memory puzzle UI.
+/// Generates a random sequence of button indices; player must press buttons in order.
+/// Correct press flashes green and advances progress (optionally shown via pips); wrong press flashes red and resets progress.
+/// Completing the full sequence notifies/marks the puzzle panel complete.
+public class PuzzleB_UI : MonoBehaviour, IPuzzleUI, IPuzzlePanelBindable
 {
     [Header("World Panel")]
     [SerializeField] private PuzzlePanel_script puzzlePanel;
@@ -23,8 +27,14 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
     private readonly List<int> sequence = new();
     private int index = 0;
 
+    public void BindPanel(PuzzlePanel_script panel)
+    {
+        puzzlePanel = panel;
+    }
+
     private void Awake()
     {
+        /// Cache panel reference and bind button click handlers once.
         if (puzzlePanel == null)
             puzzlePanel = GetComponentInParent<PuzzlePanel_script>();
 
@@ -33,6 +43,7 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
 
     private void OnEnable()
     {
+        /// Ensure a sequence exists when the UI becomes active; otherwise only reset progress.
         if (sequence.Count == 0)
             ResetPuzzle();
         else
@@ -43,6 +54,7 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
     {
         if (buttons == null) return;
 
+        /// Bind each button to Press(buttonIndex) and clear existing listeners to avoid duplicates.
         for (int i = 0; i < buttons.Length; i++)
         {
             int id = i;
@@ -55,12 +67,14 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
 
     public void ResetPuzzle()
     {
+        /// Regenerate the target sequence and reset player progress back to the start.
         GenerateNewSequence();
         ResetProgressOnly();
     }
 
     private void GenerateNewSequence()
     {
+        /// Create a new random sequence of indices in [0, buttons.Length).
         sequence.Clear();
 
         for (int i = 0; i < sequenceLength; i++)
@@ -69,6 +83,7 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
 
     private void ResetProgressOnly()
     {
+        /// Reset current input position, re-enable buttons, and refresh pip display.
         index = 0;
 
         foreach (var b in buttons)
@@ -79,6 +94,7 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
 
     private void Press(int id)
     {
+        /// Validate state and input, then compare against the next required sequence entry.
         if (sequence.Count == 0) return;
         if (id < 0 || id >= buttons.Length) return;
 
@@ -89,6 +105,7 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
             index++;
             UpdatePips();
 
+            /// When the full sequence is matched, mark the puzzle as completed.
             if (index >= sequence.Count)
             {
                 PuzzleUIDebugLauncher.Instance?.NotifyPuzzleSolved("PuzzleB");
@@ -97,6 +114,7 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
         }
         else
         {
+            /// Wrong input: flash red and reset progress back to the start (sequence stays the same).
             StartCoroutine(Flash(buttons[id], Color.red));
             ResetProgressOnly();
         }
@@ -104,6 +122,7 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
 
     private void UpdatePips()
     {
+        /// Color pips green for completed steps, otherwise a neutral "off" color.
         if (progressPips == null || progressPips.Length == 0) return;
 
         Color off = new Color(0.70f, 0.70f, 0.70f, 1f);
@@ -117,6 +136,7 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
 
     private IEnumerator Flash(Button b, Color c)
     {
+        /// Temporarily swap the button image color for feedback, then restore it after flashTime.
         if (b == null) yield break;
 
         var img = b.targetGraphic as Image;

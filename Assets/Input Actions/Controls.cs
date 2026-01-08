@@ -236,6 +236,15 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""ToggleAlbum"",
+                    ""type"": ""Button"",
+                    ""id"": ""37220d80-0381-47d9-bda8-bb4fc76784db"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -258,6 +267,17 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": ""KB+Mouse"",
                     ""action"": ""Capture"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ff9d4886-d8e9-496f-9e55-c8e79e5097e5"",
+                    ""path"": ""<Keyboard>/q"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""KB+Mouse"",
+                    ""action"": ""ToggleAlbum"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -296,6 +316,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         m_CameraMode = asset.FindActionMap("Camera Mode", throwIfNotFound: true);
         m_CameraMode_ToggleCamera = m_CameraMode.FindAction("ToggleCamera", throwIfNotFound: true);
         m_CameraMode_Capture = m_CameraMode.FindAction("Capture", throwIfNotFound: true);
+        m_CameraMode_ToggleAlbum = m_CameraMode.FindAction("ToggleAlbum", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -453,12 +474,14 @@ public partial class @Controls: IInputActionCollection2, IDisposable
     private List<ICameraModeActions> m_CameraModeActionsCallbackInterfaces = new List<ICameraModeActions>();
     private readonly InputAction m_CameraMode_ToggleCamera;
     private readonly InputAction m_CameraMode_Capture;
+    private readonly InputAction m_CameraMode_ToggleAlbum;
     public struct CameraModeActions
     {
         private @Controls m_Wrapper;
         public CameraModeActions(@Controls wrapper) { m_Wrapper = wrapper; }
         public InputAction @ToggleCamera => m_Wrapper.m_CameraMode_ToggleCamera;
         public InputAction @Capture => m_Wrapper.m_CameraMode_Capture;
+        public InputAction @ToggleAlbum => m_Wrapper.m_CameraMode_ToggleAlbum;
         public InputActionMap Get() { return m_Wrapper.m_CameraMode; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -474,6 +497,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @Capture.started += instance.OnCapture;
             @Capture.performed += instance.OnCapture;
             @Capture.canceled += instance.OnCapture;
+            @ToggleAlbum.started += instance.OnToggleAlbum;
+            @ToggleAlbum.performed += instance.OnToggleAlbum;
+            @ToggleAlbum.canceled += instance.OnToggleAlbum;
         }
 
         private void UnregisterCallbacks(ICameraModeActions instance)
@@ -484,6 +510,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @Capture.started -= instance.OnCapture;
             @Capture.performed -= instance.OnCapture;
             @Capture.canceled -= instance.OnCapture;
+            @ToggleAlbum.started -= instance.OnToggleAlbum;
+            @ToggleAlbum.performed -= instance.OnToggleAlbum;
+            @ToggleAlbum.canceled -= instance.OnToggleAlbum;
         }
 
         public void RemoveCallbacks(ICameraModeActions instance)
@@ -524,5 +553,6 @@ public partial class @Controls: IInputActionCollection2, IDisposable
     {
         void OnToggleCamera(InputAction.CallbackContext context);
         void OnCapture(InputAction.CallbackContext context);
+        void OnToggleAlbum(InputAction.CallbackContext context);
     }
 }

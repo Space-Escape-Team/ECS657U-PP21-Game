@@ -1,0 +1,12 @@
+fileFormatVersion: 2
+<<<<<<< HEAD
+guid: 26dde0097139f6d489d827a9a90ab8b5
+=======
+guid: ca327a44b41991d4ca372d310d907e3c
+>>>>>>> b6f539c2 (NavMesh bake)
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 23800000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

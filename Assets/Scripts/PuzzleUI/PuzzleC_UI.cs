@@ -1,7 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
+/// Slider alignment puzzle UI.
+/// Each slider has a hidden target value in [0,1]; indicators turn green when within tolerance.
+/// Puzzle is solved when all sliders are within tolerance, at which point input is locked and completion is reported.
+public class PuzzleC_UI : MonoBehaviour, IPuzzleUI,IPuzzlePanelBindable
 {
     [Header("World Panel")]
     [SerializeField] private PuzzlePanel_script puzzlePanel;
@@ -22,8 +25,14 @@ public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
 
     private bool solved = false;
 
+    public void BindPanel(PuzzlePanel_script panel)
+    {
+        puzzlePanel = panel;
+    }
+
     private void Awake()
     {
+        /// Cache panel reference and bind slider change callbacks.
         if (puzzlePanel == null)
             puzzlePanel = GetComponentInParent<PuzzlePanel_script>();
 
@@ -32,7 +41,7 @@ public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
 
     private void OnEnable()
     {
-
+        /// Refresh indicator state when reopening an unsolved puzzle.
         if (!solved)
             UpdateAllIndicators();
     }
@@ -41,6 +50,7 @@ public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
     {
         if (sliders == null) return;
 
+        /// Bind each slider to OnSliderChanged(index) and clear existing listeners.
         for (int i = 0; i < sliders.Length; i++)
         {
             int idx = i;
@@ -53,6 +63,7 @@ public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
 
     public void ResetPuzzle()
     {
+        /// Generate new random targets, reset sliders to midpoint, and re-enable interaction.
         solved = false;
 
         for (int i = 0; i < 3; i++)
@@ -71,6 +82,7 @@ public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
 
     private void OnSliderChanged(int idx)
     {
+        /// Update indicator for this slider and re-check solve state.
         if (solved) return;
 
         UpdateIndicator(idx);
@@ -79,6 +91,7 @@ public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
 
     private void UpdateAllIndicators()
     {
+        /// Refresh all indicator colors based on current slider values.
         for (int i = 0; i < 3; i++)
             UpdateIndicator(i);
     }
@@ -95,6 +108,7 @@ public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
 
     private void CheckSolved()
     {
+        /// Solved when all sliders are within tolerance of their targets.
         if (solved) return;
 
         for (int i = 0; i < 3; i++)

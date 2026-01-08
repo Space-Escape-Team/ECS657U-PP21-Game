@@ -20,6 +20,8 @@ public class FirstPersonCameraController : MonoBehaviour
     public float proneMinPitch = -5f;
     public float proneMaxPitch = 25f;
     public float proneSensMultiplier = 0.5f;
+    public float proneTurnSpeed = 45f;
+    [HideInInspector] public float proneTurnInput;
 
     void Start()
     {
@@ -30,6 +32,11 @@ public class FirstPersonCameraController : MonoBehaviour
 
     private void Update()
     {
+        if (Cursor.lockState != CursorLockMode.Locked)
+        {
+            return;
+        }
+
         lookInput = lookAction.action.ReadValue<Vector2>();
 
         float xDir = lookInput.x * xSens * Time.deltaTime;
@@ -52,7 +59,27 @@ public class FirstPersonCameraController : MonoBehaviour
         }
         xRotation = Mathf.Clamp(xRotation, -90f, 63f);
 
+        if (isProne && Mathf.Abs(proneTurnInput) > 0.1f)
+        {
+            yRotation += proneTurnInput * proneTurnSpeed * Time.deltaTime;
+        }
+
         transform.rotation = Quaternion.Euler(xRotation, yRotation, 0); // Rotate camera along both axes
         orientation.transform.rotation = Quaternion.Euler(0, yRotation, 0); // Rotate player along y axis
     }
+
+    public void SetCursorLock(bool locked)
+    {
+        if (locked)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+    }
+
 }

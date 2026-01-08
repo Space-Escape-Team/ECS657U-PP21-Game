@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028331, g: 0.2257133, b: 0.3069217, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -793,8 +793,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   orientation: {fileID: 916530767}
   lookAction: {fileID: 7993518037987414578, guid: 8dcc6a318ec0ec6409f2446ba1eb207c, type: 3}
+  animator: {fileID: 0}
   xSens: 45
   ySens: 30
+  isProne: 0
+  proneMinPitch: -5
+  proneMaxPitch: 25
+  proneSensMultiplier: 0.5
+  proneTurnSpeed: 45
+  proneTurnInput: 0
 --- !u!1 &551919492
 GameObject:
   m_ObjectHideFlags: 0
@@ -1203,7 +1210,7 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.16666667
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 23800000, guid: a8b2e38f8e5834d42b0aae0acfd58dae, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: ca327a44b41991d4ca372d310d907e3c, type: 2}
   m_BuildHeightMesh: 0
 --- !u!65 &652681493
 BoxCollider:
@@ -2533,6 +2540,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 20
   cameraTransitionSpeed: 5
+  proneTurnSpeed: 45
   orientation: {fileID: 916530767}
   pov: {fileID: 575417720}
   move: {fileID: -1456154572009481821, guid: 8dcc6a318ec0ec6409f2446ba1eb207c, type: 3}
@@ -2552,6 +2560,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerHealth: {fileID: 646857917}
+  playerPuzzleInteractor: {fileID: 0}
+  times_completed: 0
 --- !u!114 &1503134412
 MonoBehaviour:
   m_ObjectHideFlags: 0

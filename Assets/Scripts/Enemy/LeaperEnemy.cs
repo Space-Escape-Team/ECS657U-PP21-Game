@@ -38,7 +38,7 @@ public class LeaperEnemy : MonoBehaviour
     [SerializeField] private float maxHopDistance = 10f;
 
     [SerializeField] private float hopDuration = 0.5f;
-    [SerializeField] private float hopArcHeight = 1f;
+    [SerializeField] private float hopArcHeight = 3f;
 
     private float hopCooldown;
     [SerializeField] private float minHopCooldown = 0.3f;
@@ -54,6 +54,8 @@ public class LeaperEnemy : MonoBehaviour
 
     [Header("Animation")]
     [SerializeField] private Animator animator;
+    private float jumpAnimLength;
+    private float attackAnimLength;
 
     private Vector3 spawnPoint;
     private Vector3 lastKnownPlayerPosition;
@@ -75,6 +77,8 @@ public class LeaperEnemy : MonoBehaviour
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+        animator = GetComponent<Animator>();
+
         agent.updateRotation = false;
         agent.updatePosition = false;
 
@@ -92,7 +96,16 @@ public class LeaperEnemy : MonoBehaviour
             AssignDifficultyStats();
         }
 
+        foreach (var clip in animator.runtimeAnimatorController.animationClips)
+        {
+            if (clip.name == "JUMP")
+                jumpAnimLength = clip.length;
+            else if (clip.name == "ATTACK")
+                attackAnimLength = clip.length;
+        }
+
         StartCoroutine(StateLoop());
+        PlayIdle();
     }
 
     private void Update()
@@ -219,7 +232,13 @@ public class LeaperEnemy : MonoBehaviour
                 yield break;
             }
 
-            if (Vector3.Distance(transform.position, player.position) > attackRange)
+            // Calculate direction and distance to player
+            Vector3 toPlayer = player.position - transform.position;
+            toPlayer.y = 0f;
+            float distance = toPlayer.magnitude;
+
+            // Only hop if player is farther than a tiny threshold
+            if (distance > attackRange)
                 yield return HopToward(player.position);
 
             yield return null;
@@ -263,10 +282,21 @@ public class LeaperEnemy : MonoBehaviour
 
         isHopping = true;
 
+        // Play jump animation scaled so that 80% occurs in-air (also scaled to duration)
+        float airPercent = 0.8f;
+        float airAnimTime = jumpAnimLength * airPercent;
+        float animSpeed = airAnimTime / hopDuration;
+        animator.speed = animSpeed;
+        animator.Play("JUMP", 0, 0f);
+
         // Determines starting location
         Vector3 start = transform.position;
         Vector3 toGoal = goal - start;
         toGoal.y = 0f;
+
+        // Rotate toward the movement direction
+        if (toGoal.sqrMagnitude > 0.001f)
+            transform.rotation = Quaternion.LookRotation(toGoal.normalized);
 
         // Determines how far to hop
         float step = Mathf.Min(hopDistance, toGoal.magnitude);
@@ -275,7 +305,17 @@ public class LeaperEnemy : MonoBehaviour
         // Determines landing location
         Vector3 landing = desired;
         if (NavMesh.SamplePosition(desired, out NavMeshHit hit, hopSampleRadius, NavMesh.AllAreas))
-            landing = hit.position;
+        {
+            if (Vector3.Distance(hit.position, start) > 0.1f)
+                landing = hit.position;
+        }
+
+        // Skip hop if landing is too close
+        if (Vector3.Distance(start, landing) < 0.1f)
+        {
+            isHopping = false;
+            yield break;
+        }
 
         // Moves the enemy in an arc across a set duration
         float t = 0f;
@@ -284,16 +324,23 @@ public class LeaperEnemy : MonoBehaviour
             float a = t / hopDuration;
             Vector3 pos = Vector3.Lerp(start, landing, a);
             pos.y += Mathf.Sin(a * Mathf.PI) * hopArcHeight;
-            Vector3 moveStep = pos - transform.position;
-            agent.Move(moveStep);
+
+            transform.position = pos;
+
             t += Time.deltaTime;
             yield return null;
         }
 
         transform.position = landing;
-        agent.Warp(landing);
+
+        // Play last 20% of jump animation after landing
+        float landAnimTime = jumpAnimLength - airAnimTime;
+        yield return new WaitForSeconds(landAnimTime / animSpeed);
 
         yield return new WaitForSeconds(hopCooldown);
+
+        PlayIdle();
+
         isHopping = false;
     }
 
@@ -321,8 +368,26 @@ public class LeaperEnemy : MonoBehaviour
         if (Time.time - lastAttackTime < attackInterval)
             return;
 
+        animator.speed = 1f;
+        animator.Play("ATTACK", 0, 0f);
+
         playerHealth.TakeDamage(attackDamage);
         lastAttackTime = Time.time;
+    }
+
+    private void PlayIdle()
+    {
+        animator.speed = 1f;
+        animator.Play("IDLE");
+    }
+
+    private IEnumerator ReturnToIdleAfterAttack()
+    {
+        yield return new WaitForSeconds(attackAnimLength);
+        if (!isHopping)
+        {
+            PlayIdle();
+        }
     }
 
     private static Vector3? GetRandomNavmeshPoint(Vector3 center, float radius, int attempts, float sampleRadius)
