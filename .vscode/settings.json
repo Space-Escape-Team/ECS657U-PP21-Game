@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "ECS657U-PP21-Game.sln"
+    "dotnet.defaultSolution": "ECS657U-PP21-Game.slnx"
 }

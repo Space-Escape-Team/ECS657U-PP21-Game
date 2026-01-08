@@ -5,66 +5,93 @@ using UnityEngine.UI;
 
 public class PlayerHealth : MonoBehaviour
 {
-    public Slider healthBarSlider; // Slider for UI health bar
-    private int maxHealth;
-    private int currentHealth;
-    private bool alive;
+    [Header("Health")]
+    [SerializeField] private int maxHealth = 100;
+    [SerializeField] private int currentHealth;
 
-    void Start()
+    [Header("UI")]
+    [SerializeField] private Slider healthBarSlider;
+
+    public int MaxHealth => maxHealth;
+    public int CurrentHealth => currentHealth;
+    public bool IsAlive { get; private set; } = true;
+
+    private void Awake()
     {
-        SetMaxHealth(100);
-        SetCurrentHealth(maxHealth);
-        alive = true;
-    }
-
-    private void SetMaxHealth(int health)
-    {
-        maxHealth = health;
-        healthBarSlider.maxValue = maxHealth;
-    }
-
-    private void SetCurrentHealth(int health)
-    {
-        if (health >= maxHealth)
-        {
-            currentHealth = maxHealth;
-        }
-        else if (health <= 0)
-        {
-            currentHealth = 0;
-            Die();
-        }
-        else
-        {
-            currentHealth = health;
-        }
-
-        healthBarSlider.value = currentHealth;
+        SetMaxHealth(maxHealth);
+        IsAlive = true;
     }
 
     public void TakeDamage(int damage)
     {
-        SetCurrentHealth(currentHealth -= damage);
+        if (!IsAlive) 
+        {
+            return;
+        }
+        if (damage <= 0) 
+        {
+            return;
+        }
+
+        SetHealth(currentHealth - damage);
     }
 
     public void Heal(int healAmount)
     {
-        if (alive)
+        if (!IsAlive) 
         {
-            SetCurrentHealth(currentHealth += healAmount);
+            return;
         }
-        else
+        if (healAmount <= 0) 
         {
-            Debug.Log("Can't heal once dead");
+            return;
+        }
+
+        SetHealth(currentHealth + healAmount);
+    }
+
+    public void SetMaxHealth(int newMax, bool fullHeal = true)
+    {
+        maxHealth = Mathf.Max(1, newMax);
+
+        // Allows max health upgrades that don't heal the player
+        if (fullHeal)
+        {
+            SetHealth(maxHealth);
         }
     }
 
-    void Die()
+    private void SetHealth(int newHealth)
     {
-        if (alive)
+        currentHealth = Mathf.Clamp(newHealth, 0, maxHealth);
+
+        SyncUI();
+
+        if (currentHealth <= 0)
         {
-            Debug.Log("Player died");
-            alive = false;
+            Die();
         }
+    }
+
+    private void SyncUI()
+    {
+        if (healthBarSlider == null) 
+        {
+            return;
+        }
+
+        healthBarSlider.maxValue = maxHealth;
+        healthBarSlider.value = currentHealth;
+    }
+
+    private void Die()
+    {
+        if (!IsAlive) 
+        {
+            return;
+        }
+
+        IsAlive = false;
+        Debug.Log("Player died");
     }
 }
