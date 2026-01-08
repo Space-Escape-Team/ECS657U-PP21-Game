@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 8802f6f6d9152e64588c63031f133102
+guid: c3cafd6c72e7147468be5316bb9596f4
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -49,7 +49,7 @@ ModelImporter:
       loopBlendPositionXZ: 0
       keepOriginalOrientation: 0
       keepOriginalPositionY: 1
-      keepOriginalPositionXZ: 0
+      keepOriginalPositionXZ: 1
       heightFromFeet: 0
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
@@ -109,7 +109,7 @@ ModelImporter:
   humanDescription:
     serializedVersion: 3
     human:
-    - boneName: pelvis
+    - boneName: root
       humanName: Hips
       limit:
         min: {x: 0, y: 0, z: 0}
@@ -526,68 +526,68 @@ ModelImporter:
         length: 0
         modified: 0
     skeleton:
-    - name: SK_Military_Survivalist(Clone)
+    - name: SK_Military_Survivalist Arms(Clone)
       parentName: 
       position: {x: 0, y: 0, z: 0}
       rotation: {x: 0, y: 0, z: 0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: SK_Military_Head1
-      parentName: SK_Military_Survivalist(Clone)
+      parentName: SK_Military_Survivalist Arms(Clone)
       position: {x: -0, y: 0, z: 0}
       rotation: {x: 0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: SK_Military_Male_Arms1
-      parentName: SK_Military_Survivalist(Clone)
+      parentName: SK_Military_Survivalist Arms(Clone)
       position: {x: -0, y: 0, z: 0}
       rotation: {x: 0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: SK_Military_Shirt3
-      parentName: SK_Military_Survivalist(Clone)
+      parentName: SK_Military_Survivalist Arms(Clone)
       position: {x: -0, y: 0, z: 0}
       rotation: {x: 0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: SK_Military_Pants2
-      parentName: SK_Military_Survivalist(Clone)
+      parentName: SK_Military_Survivalist Arms(Clone)
       position: {x: -0, y: 0, z: 0}
       rotation: {x: 0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: SK_Military_Boots3
-      parentName: SK_Military_Survivalist(Clone)
+      parentName: SK_Military_Survivalist Arms(Clone)
       position: {x: -0, y: 0, z: 0}
       rotation: {x: 0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: SK_Military_Cap1
-      parentName: SK_Military_Survivalist(Clone)
+      parentName: SK_Military_Survivalist Arms(Clone)
       position: {x: -0, y: 0, z: 0}
       rotation: {x: 0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: SK_Military_Backpack1
-      parentName: SK_Military_Survivalist(Clone)
+      parentName: SK_Military_Survivalist Arms(Clone)
       position: {x: -0, y: 0, z: 0}
       rotation: {x: 0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: SK_Military_Male_Arms1_Gloves1
-      parentName: SK_Military_Survivalist(Clone)
+      parentName: SK_Military_Survivalist Arms(Clone)
       position: {x: -0, y: 0, z: 0}
       rotation: {x: 0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: SK_Military_Vest1
-      parentName: SK_Military_Survivalist(Clone)
+      parentName: SK_Military_Survivalist Arms(Clone)
       position: {x: -0, y: 0, z: 0}
       rotation: {x: 0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: SK_Military_Backpack1_vest
-      parentName: SK_Military_Survivalist(Clone)
+      parentName: SK_Military_Survivalist Arms(Clone)
       position: {x: -0, y: 0, z: 0}
       rotation: {x: 0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: SK_Military_Vest1_4
-      parentName: SK_Military_Survivalist(Clone)
+      parentName: SK_Military_Survivalist Arms(Clone)
       position: {x: -0, y: 0, z: 0}
       rotation: {x: 0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: FPS_HANDS
-      parentName: SK_Military_Survivalist(Clone)
+      parentName: SK_Military_Survivalist Arms(Clone)
       position: {x: -0, y: 0, z: 0}
       rotation: {x: 0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
@@ -607,7 +607,7 @@ ModelImporter:
       rotation: {x: 0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: root
-      parentName: SK_Military_Survivalist(Clone)
+      parentName: SK_Military_Survivalist Arms(Clone)
       position: {x: -0, y: 0, z: 0}
       rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071068}
       scale: {x: 1, y: 1, z: 1}

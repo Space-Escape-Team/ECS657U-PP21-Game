@@ -9,6 +9,7 @@ public class TurnModel : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        transform.rotation = Orientation.rotation;
+        Vector3 euler = Orientation.eulerAngles;
+        transform.rotation = Quaternion.Euler(0f, euler.y, 0f);
     }
 }

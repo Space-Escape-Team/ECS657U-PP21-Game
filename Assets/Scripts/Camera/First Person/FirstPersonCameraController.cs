@@ -6,20 +6,25 @@ public class FirstPersonCameraController : MonoBehaviour
     [Header("References")]
     public Transform orientation;
     public InputActionReference lookAction;
+    public Animator animator;
 
     [Header("Values")]
     public float xSens;
     public float ySens;
 
-
+    public bool isProne;
     private Vector2 lookInput;
     private float xRotation;
     private float yRotation;
 
+    public float proneMinPitch = -5f;
+    public float proneMaxPitch = 25f;
+    public float proneSensMultiplier = 0.5f;
+
     void Start()
     {
-        //Cursor.lockState = CursorLockMode.Locked;
-        //Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
         lookAction.action.Enable();
     }
 
@@ -30,11 +35,21 @@ public class FirstPersonCameraController : MonoBehaviour
         float xDir = lookInput.x * xSens * Time.deltaTime;
         float yDir = lookInput.y * ySens * Time.deltaTime;
 
+        if (isProne)
+        {
+            xDir *= proneSensMultiplier;
+            yDir *= proneSensMultiplier;
+        }
+
         // Correct for Unity First Person
         yRotation += xDir;
         xRotation -= yDir;
 
         // Prevent you from looking too far up to break or neck or too far down to notice missing body
+        if (isProne)
+        {
+            xRotation = Mathf.Clamp(xRotation, proneMinPitch, proneMaxPitch);
+        }
         xRotation = Mathf.Clamp(xRotation, -90f, 63f);
 
         transform.rotation = Quaternion.Euler(xRotation, yRotation, 0); // Rotate camera along both axes
