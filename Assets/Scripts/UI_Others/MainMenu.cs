@@ -8,7 +8,13 @@ public class MainMenu : MonoBehaviour // the methods for the main menu
     public void PlayGame ()
     {
         Debug.Log("START PLEASE!"); // throws the given text into the debugger if successful
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1); // Loads the next scene, which should be the hub area.
+        LevelLoader.Instance.LoadNextLevel(); // Loads the next scene, which should be the hub area.
+    }
+
+    public void PlayGame ()
+    {
+        Debug.Log("START PLEASE!"); // throws the given text into the debugger if successful
+        LevelLoader.Instance.LoadNextLevel(); // Loads the next scene, which should be the hub area.
     }
 
     public void QuitGame ()

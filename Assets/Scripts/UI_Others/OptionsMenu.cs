@@ -18,7 +18,7 @@ public class OptionsMenu : MonoBehaviour // the methods for the options menu
         res = Screen.resolutions;
         resDropdown.ClearOptions(); // clears the default resolutions given by Unity
 
-        List<string> resOptions = new List<string>(); // resolutions are integers but the options are strings, so they must be converted
+        List<string> resOptions = new List<string>(); 
         int currentResIndex = 0; // set the current resolution as 0 for use later
 
         for (int i = 0; i < res.Length; i++) // for the length of the resolution array
