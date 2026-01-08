@@ -193,17 +193,18 @@ public class PlayerMovement : MonoBehaviour
     }
     private void HandleStance()
     {
-        // Update animator parameters
         animator.SetBool("IsCrouching", isCrouching);
         animator.SetBool("IsProne", isProne);
 
-        // Update movement speed
+        // Movement speed lower if crouching or crawling
         if (isProne)
             currentSpeed = moveSpeed / 2.5f;
         else if (isCrouching)
             currentSpeed = moveSpeed / 2f;
         else
             currentSpeed = moveSpeed;
+
+        FindFirstObjectByType<FirstPersonCameraController>().isProne = isProne;
     }
     private void FixedUpdate()
     {
