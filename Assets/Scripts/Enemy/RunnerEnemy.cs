@@ -12,16 +12,16 @@ public class RunnerEnemy : MonoBehaviour
 
     [Header("Wander")]
     private float wanderRadius;
-    [SerializeField] private float minWanderRadius = 25f;
-    [SerializeField] private float maxWanderRadius = 75f;
+    [SerializeField] private float minWanderRadius = 30f;
+    [SerializeField] private float maxWanderRadius = 70f;
 
     private float wanderInterval;
     [SerializeField] private float minWanderInterval = 10f;
     [SerializeField] private float maxWanderInterval = 30f;
 
     private float dwellTime;
-    [SerializeField] private float dwellMin = 2f;
-    [SerializeField] private float dwellMax = 15f;
+    [SerializeField] private float dwellMin = 3f;
+    [SerializeField] private float dwellMax = 10f;
 
     [Header("NavMesh Sampling")]
     [SerializeField] private float destinationSampleRadius = 2.0f;
@@ -38,17 +38,17 @@ public class RunnerEnemy : MonoBehaviour
 
     [Header("Perception")]
     private float sightDistance;
-    [SerializeField] private float minSightDistance = 25f;
-    [SerializeField] private float maxSightDistance = 75f;
+    [SerializeField] private float minSightDistance = 30f;
+    [SerializeField] private float maxSightDistance = 70f;
     [SerializeField, Range(0f, 180f)] private float fieldOfView = 110f;
 
     private float trackTime;
-    [SerializeField] private float minTrackTime = 2f;
+    [SerializeField] private float minTrackTime = 3f;
     [SerializeField] private float maxTrackTime = 10f;
 
     private float forgetTime;
-    [SerializeField] private float minForgetTime = 15f;
-    [SerializeField] private float maxForgetTime = 45f;
+    [SerializeField] private float minForgetTime = 10f;
+    [SerializeField] private float maxForgetTime = 20f;
 
     [SerializeField] private float closeRetentionRadius = 10f;
     [SerializeField] private LayerMask visionMask = ~0;
@@ -62,9 +62,20 @@ public class RunnerEnemy : MonoBehaviour
     [SerializeField] private float searchPausePerLook = 3f;
 
     [Header("Combat")]
-    [SerializeField] private float attackRange = 5f;
+    [SerializeField] private float attackRange = 3f;
     [SerializeField] private int attackDamage;
     [SerializeField] private float attackInterval = 3f;
+
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+
+    // Idle sounds
+    [SerializeField] private AudioClip[] idleSounds;
+    [SerializeField] private float minIdleSoundInterval = 5f;
+    [SerializeField] private float maxIdleSoundInterval = 15f;
+
+    // Attack sounds
+    [SerializeField] private AudioClip[] attackSounds;
 
     private Vector3 spawnPoint;
     private Vector3 lastKnownPlayerPosition;
@@ -91,6 +102,7 @@ public class RunnerEnemy : MonoBehaviour
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+        agent.stoppingDistance = Mathf.Max(attackRange - 0.2f, 2f);
         agent.updateRotation = false;
 
         spawnPoint = transform.position;
@@ -100,6 +112,9 @@ public class RunnerEnemy : MonoBehaviour
     {
         player = GameObject.FindGameObjectWithTag("Player").transform;
 
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+
         if (player != null)
         {
             playerHealth = player.GetComponent<PlayerHealth>();
@@ -107,6 +122,7 @@ public class RunnerEnemy : MonoBehaviour
             AssignDifficultyStats();
         }
 
+        StartCoroutine(PlayRandomIdleSounds());
         StartCoroutine(StateLoop());
     }
 
@@ -226,17 +242,13 @@ public class RunnerEnemy : MonoBehaviour
         switch (state)
         {
             case State.Wander:
-                agent.stoppingDistance = 0f;
                 break;
             case State.Chase:
-                agent.stoppingDistance = Mathf.Max(attackRange, 1f);
                 break;
             case State.Investigate:
-                agent.stoppingDistance = 0f;
                 break;
             case State.Search:
                 agent.ResetPath();
-                agent.stoppingDistance = 0f;
                 break;
         }
     }
@@ -358,16 +370,26 @@ public class RunnerEnemy : MonoBehaviour
     // Makes the enemy face the direction of movement
     private void UpdateMovementFacing()
     {
-        if (agent.isStopped || agent.velocity.sqrMagnitude <= 0.01f)
-            return;
+       Vector3 targetDirection = Vector3.zero;
 
-        Vector3 dir = agent.velocity;
-        dir.y = 0f;
-        if (dir.sqrMagnitude <= 0.0001f)
-            return;
+        // If moving, face direction of movement
+        if (!agent.isStopped && agent.velocity.sqrMagnitude > 0.01f)
+        {
+            targetDirection = agent.velocity;
+        }
 
-        Quaternion targetRotation = Quaternion.LookRotation(dir.normalized);
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
+        // If not moving but aware of player, face the player
+        else if (hasExactAwareness && player != null)
+        {
+            targetDirection = player.position - transform.position;
+        }
+
+        if (targetDirection.sqrMagnitude > 0.0001f)
+        {
+            targetDirection.y = 0f;
+            Quaternion targetRotation = Quaternion.LookRotation(targetDirection.normalized);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
+        }
     }
 
     private void UpdateAnimation()
@@ -402,6 +424,35 @@ public class RunnerEnemy : MonoBehaviour
 
         if (animator != null)
             animator.SetTrigger("Attack");
+
+        // Play random attack sound
+        PlayRandomSound(attackSounds);
+    }
+
+    private void PlayIdle()
+    {
+        animator.speed = 1f;
+        animator.Play("IDLE");
+    }
+
+    private void PlayRandomSound(AudioClip[] clips)
+    {
+        if (clips.Length == 0 || audioSource == null) 
+            return;
+
+        AudioClip clip = clips[Random.Range(0, clips.Length)];
+        audioSource.PlayOneShot(clip);
+    }
+
+    private IEnumerator PlayRandomIdleSounds()
+    {
+        while (true)
+        {
+            PlayRandomSound(idleSounds);
+
+            float waitTime = Random.Range(minIdleSoundInterval, maxIdleSoundInterval);
+            yield return new WaitForSeconds(waitTime);
+        }
     }
 
     private bool CanSeePlayer(Transform playerTransform)
