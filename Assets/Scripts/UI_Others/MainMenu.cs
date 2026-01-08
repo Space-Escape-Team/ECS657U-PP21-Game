@@ -5,6 +5,7 @@ using UnityEngine.SceneManagement;
 
 public class MainMenu : MonoBehaviour // the methods for the main menu
 {
+    public int sceneToLoad;
     public void PlayGame ()
     {
         Debug.Log("START PLEASE!"); // throws the given text into the debugger if successful
@@ -14,7 +15,7 @@ public class MainMenu : MonoBehaviour // the methods for the main menu
     public void LoadGame ()
     {
         Debug.Log("START PLEASE!"); // throws the given text into the debugger if successful
-        LevelLoader.Instance.LoadLevel(); // Loads the next scene, which should be the hub area.
+        LevelLoader.Instance.LoadLevel(sceneToLoad); // Loads the next scene, which should be the hub area.
     }
 
     public void QuitGame ()
