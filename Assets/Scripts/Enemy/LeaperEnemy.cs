@@ -12,13 +12,13 @@ public class LeaperEnemy : MonoBehaviour
 
     [Header("Awareness")]
     private float awarenessRadius;
-    [SerializeField] private float minAwarenessRadius = 25f;
-    [SerializeField] private float maxAwarenessRadius = 75f;
+    [SerializeField] private float minAwarenessRadius = 30f;
+    [SerializeField] private float maxAwarenessRadius = 70f;
 
     [Header("Wander")]
     private float wanderRadius;
-    [SerializeField] private float minWanderRadius = 25f;
-    [SerializeField] private float maxWanderRadius = 75f;
+    [SerializeField] private float minWanderRadius = 30f;
+    [SerializeField] private float maxWanderRadius = 70f;
 
     private float wanderInterval;
     [SerializeField] private float minWanderInterval = 10f;
@@ -37,15 +37,34 @@ public class LeaperEnemy : MonoBehaviour
     [SerializeField] private float minHopDistance = 5f;
     [SerializeField] private float maxHopDistance = 10f;
 
-    [SerializeField] private float hopDuration = 0.5f;
-    [SerializeField] private float hopArcHeight = 3f;
+    [SerializeField] private float hopDuration = 1f;
+    [SerializeField] private float hopArcHeight = 10f;
 
     private float hopCooldown;
-    [SerializeField] private float minHopCooldown = 0.3f;
+    [SerializeField] private float minHopCooldown = 0.2f;
     [SerializeField] private float maxHopCooldown = 1f;
 
     [SerializeField] private float hopTurnSpeed = 900f;
     [SerializeField] private float arriveDistance = 1f;
+
+    [Header("Perception")]
+    private float sightDistance;
+    [SerializeField] private float minSightDistance = 30f;
+    [SerializeField] private float maxSightDistance = 70f;
+    [SerializeField, Range(0f, 180f)] private float fieldOfView = 110f;
+
+    private float trackTime;
+    [SerializeField] private float minTrackTime = 3f;
+    [SerializeField] private float maxTrackTime = 10f;
+
+    private float forgetTime;
+    [SerializeField] private float minForgetTime = 10f;
+    [SerializeField] private float maxForgetTime = 20f;
+
+    [SerializeField] private float closeRetentionRadius = 10f;
+    [SerializeField] private LayerMask visionMask = ~0;
+    [SerializeField] private float eyeHeight = 1.0f;
+    [SerializeField] private float playerAimHeight = 1.0f;
 
     [Header("Combat")]
     [SerializeField] private float attackRange = 5f;
@@ -57,10 +76,28 @@ public class LeaperEnemy : MonoBehaviour
     private float jumpAnimLength;
     private float attackAnimLength;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+
+    // Idle sounds
+    [SerializeField] private AudioClip[] idleSounds;
+    [SerializeField] private float minIdleSoundInterval = 5f;
+    [SerializeField] private float maxIdleSoundInterval = 15f;
+
+    // Attack sounds
+    [SerializeField] private AudioClip[] attackSounds;
+
     private Vector3 spawnPoint;
     private Vector3 lastKnownPlayerPosition;
 
-    private bool isAware;
+    // Perception state
+    private bool hasLOS;
+    private bool hasExactAwareness;
+    private bool hasEverDetected;
+    private float timeSinceLostLOS = Mathf.Infinity;
+    private float timeSinceLastExact = Mathf.Infinity;
+    private bool hadLOSLastFrame;
+
     private bool isHopping;
 
     // Combat
@@ -89,6 +126,9 @@ public class LeaperEnemy : MonoBehaviour
     {
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
 
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+
         if (player != null)
         {
             playerHealth = player.GetComponent<PlayerHealth>();
@@ -105,6 +145,7 @@ public class LeaperEnemy : MonoBehaviour
         }
 
         StartCoroutine(StateLoop());
+        StartCoroutine(PlayRandomIdleSounds());
         PlayIdle();
     }
 
@@ -113,7 +154,7 @@ public class LeaperEnemy : MonoBehaviour
         UpdatePerception();
         TryAttackIfValid();
 
-        if (isAware && player != null)
+        if (hasExactAwareness && player != null)
         {
             FaceToward(player.position);
         }
@@ -124,6 +165,10 @@ public class LeaperEnemy : MonoBehaviour
         // Random stats are chosen from the lower half of the bounds
         if (difficulty == GameDifficulty.Difficulty.Story)
         {
+            forgetTime = Random.Range(minForgetTime, (minForgetTime + maxForgetTime) / 2);
+            sightDistance = Random.Range(minSightDistance, (minSightDistance + maxSightDistance) / 2);
+            trackTime = Random.Range(minTrackTime, (minTrackTime + maxTrackTime) / 2);
+
             awarenessRadius = Random.Range(minAwarenessRadius, (minAwarenessRadius + maxAwarenessRadius) / 2f);
             wanderRadius = Random.Range(minWanderRadius, (minWanderRadius + maxWanderRadius) / 2f);
             wanderInterval = Random.Range(minWanderInterval, (minWanderInterval + maxWanderInterval) / 2f);
@@ -137,6 +182,10 @@ public class LeaperEnemy : MonoBehaviour
         // Random stats are chosen from the upper half of the bounds
         else if (difficulty == GameDifficulty.Difficulty.Challenge)
         {
+            forgetTime = Random.Range((minForgetTime + maxForgetTime) / 2, maxForgetTime);
+            sightDistance = Random.Range((minSightDistance + maxSightDistance) / 2, maxSightDistance);
+            trackTime = Random.Range((minTrackTime + maxTrackTime) / 2, maxTrackTime);
+
             awarenessRadius = Random.Range((minAwarenessRadius + maxAwarenessRadius) / 2f, maxAwarenessRadius);
             wanderRadius = Random.Range((minWanderRadius + maxWanderRadius) / 2f, maxWanderRadius);
             wanderInterval = Random.Range((minWanderInterval + maxWanderInterval) / 2f, maxWanderInterval);
@@ -150,6 +199,10 @@ public class LeaperEnemy : MonoBehaviour
         // Random stats can be any value within the bounds
         else
         {
+            forgetTime = Random.Range(minForgetTime, maxForgetTime);
+            sightDistance = Random.Range(minSightDistance, maxSightDistance);
+            trackTime = Random.Range(minTrackTime, maxTrackTime);
+
             awarenessRadius = Random.Range(minAwarenessRadius, maxAwarenessRadius);
             wanderRadius = Random.Range(minWanderRadius, maxWanderRadius);
             wanderInterval = Random.Range(minWanderInterval, maxWanderInterval);
@@ -166,15 +219,41 @@ public class LeaperEnemy : MonoBehaviour
     {
         if (player == null)
         {
-            isAware = false;
+            hasLOS = false;
+            hasExactAwareness = false;
             return;
         }
 
-        // Enemy is aware of the player if the player is within it's awareness radius
-        isAware = Vector3.Distance(transform.position, player.position) <= awarenessRadius;
+        float dt = Time.deltaTime;
 
-        if (isAware)
+        // Enemy have an unobstructed view of the player to detect them
+        hasLOS = CanSeePlayer(player);
+
+        if (hasLOS)
+            timeSinceLostLOS = 0f;
+        else
+            timeSinceLostLOS += dt;
+
+        float dist = Vector3.Distance(transform.position, player.position);
+
+        // Once aware, will know the players exact location when close or for a short time after losing sight
+        bool closeRetention = hasEverDetected && dist <= closeRetentionRadius;
+        bool postLOSTracking = hasEverDetected && !hasLOS && timeSinceLostLOS <= trackTime;
+
+        hasExactAwareness = hasLOS || closeRetention || postLOSTracking;
+
+        if (hasExactAwareness)
+        {
+            hasEverDetected = true;
             lastKnownPlayerPosition = player.position;
+            timeSinceLastExact = 0f;
+        }
+        else
+        {
+            timeSinceLastExact += dt;
+        }
+
+        hadLOSLastFrame = hasLOS;
     }
 
     // Simple state machine controls behaviour
@@ -182,7 +261,7 @@ public class LeaperEnemy : MonoBehaviour
     {
         while (true)
         {
-            if (isAware)
+            if (hasExactAwareness && state != State.Chase)
                 state = State.Chase;
 
             switch (state)
@@ -206,7 +285,7 @@ public class LeaperEnemy : MonoBehaviour
         float t = 0f;
         while (t < wanderInterval)
         {
-            if (isAware) { state = State.Chase; yield break; }
+            if (hasExactAwareness) { state = State.Chase; yield break; }
             yield return HopToward(roam.Value);
             t += hopDuration + hopCooldown;
         }
@@ -215,7 +294,7 @@ public class LeaperEnemy : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < dwell)
         {
-            if (isAware) { state = State.Chase; yield break; }
+            if (hasExactAwareness) { state = State.Chase; yield break; }
             elapsed += Time.deltaTime;
             yield return null;
         }
@@ -226,7 +305,7 @@ public class LeaperEnemy : MonoBehaviour
     {
         while (state == State.Chase)
         {
-            if (!isAware || player == null)
+            if (!hasExactAwareness || player == null)
             {
                 state = State.Investigate;
                 yield break;
@@ -250,7 +329,7 @@ public class LeaperEnemy : MonoBehaviour
     {
         while (state == State.Investigate)
         {
-            if (isAware) { state = State.Chase; yield break; }
+            if (hasExactAwareness) { state = State.Chase; yield break; }
             if (Vector3.Distance(transform.position, lastKnownPlayerPosition) <= arriveDistance)
             {
                 state = State.WaitAtLastKnown;
@@ -267,7 +346,7 @@ public class LeaperEnemy : MonoBehaviour
         float t = 0f;
         while (t < waitFor)
         {
-            if (isAware) { state = State.Chase; yield break; }
+            if (hasExactAwareness) { state = State.Chase; yield break; }
             t += Time.deltaTime;
             yield return null;
         }
@@ -282,27 +361,28 @@ public class LeaperEnemy : MonoBehaviour
 
         isHopping = true;
 
-        // Play jump animation scaled so that 80% occurs in-air (also scaled to duration)
+        // Play jump animation scaled so that 80% occurs in-air
         float airPercent = 0.8f;
         float airAnimTime = jumpAnimLength * airPercent;
         float animSpeed = airAnimTime / hopDuration;
         animator.speed = animSpeed;
         animator.Play("JUMP", 0, 0f);
 
-        // Determines starting location
+        // Store start position
         Vector3 start = transform.position;
+        float startY = start.y;
         Vector3 toGoal = goal - start;
         toGoal.y = 0f;
 
-        // Rotate toward the movement direction
+        // Rotate toward movement direction
         if (toGoal.sqrMagnitude > 0.001f)
             transform.rotation = Quaternion.LookRotation(toGoal.normalized);
 
-        // Determines how far to hop
+        // Determine hop distance
         float step = Mathf.Min(hopDistance, toGoal.magnitude);
         Vector3 desired = start + toGoal.normalized * step;
 
-        // Determines landing location
+        // Sample landing on NavMesh
         Vector3 landing = desired;
         if (NavMesh.SamplePosition(desired, out NavMeshHit hit, hopSampleRadius, NavMesh.AllAreas))
         {
@@ -310,20 +390,36 @@ public class LeaperEnemy : MonoBehaviour
                 landing = hit.position;
         }
 
-        // Skip hop if landing is too close
+        // Check if the path is clear
+        Vector3 checkDir = landing - start;
+        float checkDistance = checkDir.magnitude;
+        if (Physics.Raycast(start + Vector3.up * 0.1f, checkDir.normalized, checkDistance, ~0, QueryTriggerInteraction.Ignore))
+        {
+            // Obstacle detected; skip hop
+            isHopping = false;
+            yield break;
+        }
+
+        // Skip hop if landing too close
         if (Vector3.Distance(start, landing) < 0.1f)
         {
             isHopping = false;
             yield break;
         }
 
-        // Moves the enemy in an arc across a set duration
+        // Scale hop height based on distance
+        float distance = Vector3.Distance(start, landing);
+        float scaledHopHeight = hopArcHeight * Mathf.Clamp01(distance / hopDistance);
+
+        // Move in an arc over hopDuration
         float t = 0f;
         while (t < hopDuration)
         {
-            float a = t / hopDuration;
+            float a = t / hopDuration; // 0 -> 1
             Vector3 pos = Vector3.Lerp(start, landing, a);
-            pos.y += Mathf.Sin(a * Mathf.PI) * hopArcHeight;
+
+            // Parabolic vertical offset
+            pos.y = startY + scaledHopHeight * 4f * a * (1f - a);
 
             transform.position = pos;
 
@@ -331,16 +427,17 @@ public class LeaperEnemy : MonoBehaviour
             yield return null;
         }
 
+        // Ensure final landing position
         transform.position = landing;
 
         // Play last 20% of jump animation after landing
         float landAnimTime = jumpAnimLength - airAnimTime;
         yield return new WaitForSeconds(landAnimTime / animSpeed);
 
+        // Wait for cooldown
         yield return new WaitForSeconds(hopCooldown);
 
         PlayIdle();
-
         isHopping = false;
     }
 
@@ -359,20 +456,68 @@ public class LeaperEnemy : MonoBehaviour
     // Multiple checks for whether the player can be successfully attacked. If possible, do so
     private void TryAttackIfValid()
     {
-        if (!isAware || playerHealth == null)
+        // Check if enemy is aware and player exists
+        if (!hasExactAwareness)
+        {
             return;
+        }
 
-        if (Vector3.Distance(transform.position, player.position) > attackRange)
+        if (playerHealth == null)
+        {
             return;
+        }
 
-        if (Time.time - lastAttackTime < attackInterval)
+        // Check attack range
+        float distance = Vector3.Distance(transform.position, player.position);
+        if (distance > attackRange)
+        {
             return;
+        }
 
+        // Check attack cooldown
+        float timeSinceLastAttack = Time.time - lastAttackTime;
+        if (timeSinceLastAttack < attackInterval)
+        {
+            return;
+        }
+
+        // Play attack animation
         animator.speed = 1f;
         animator.Play("ATTACK", 0, 0f);
 
+        // Play random attack sound
+        PlayRandomSound(attackSounds);
+
+        // Apply damage
         playerHealth.TakeDamage(attackDamage);
+
+        // Reset attack timer
         lastAttackTime = Time.time;
+    }
+
+    private bool CanSeePlayer(Transform playerTransform)
+    {
+        Vector3 enemyEye = transform.position + Vector3.up * eyeHeight;
+        Vector3 playerAim = playerTransform.position + Vector3.up * playerAimHeight;
+
+        Vector3 toPlayer = playerAim - enemyEye;
+        float distance = toPlayer.magnitude;
+
+        if (distance > sightDistance)
+            return false;
+
+        // Can only see player within the enemies field of view
+        float angle = Vector3.Angle(transform.forward, toPlayer);
+        if (angle > fieldOfView * 0.5f)
+            return false;
+
+        Vector3 dir = toPlayer / Mathf.Max(distance, 0.0001f);
+
+        // Raycast determines if an object is obstructing the view of the player
+        if (Physics.Raycast(enemyEye, dir, out RaycastHit hit, sightDistance, visionMask, QueryTriggerInteraction.Ignore))
+            return hit.transform.IsChildOf(playerTransform);
+
+        return false;
     }
 
     private void PlayIdle()
@@ -387,6 +532,26 @@ public class LeaperEnemy : MonoBehaviour
         if (!isHopping)
         {
             PlayIdle();
+        }
+    }
+
+    private void PlayRandomSound(AudioClip[] clips)
+    {
+        if (clips.Length == 0 || audioSource == null) 
+            return;
+
+        AudioClip clip = clips[Random.Range(0, clips.Length)];
+        audioSource.PlayOneShot(clip);
+    }
+
+    private IEnumerator PlayRandomIdleSounds()
+    {
+        while (true)
+        {
+            PlayRandomSound(idleSounds);
+
+            float waitTime = Random.Range(minIdleSoundInterval, maxIdleSoundInterval);
+            yield return new WaitForSeconds(waitTime);
         }
     }
 
