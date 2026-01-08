@@ -131,7 +131,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""path"": ""<Keyboard>/w"",
                     ""interactions"": """",
                     ""processors"": """",
-                    ""groups"": """",
+                    ""groups"": ""KB+Mouse"",
                     ""action"": ""Move"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
@@ -142,7 +142,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""path"": ""<Keyboard>/s"",
                     ""interactions"": """",
                     ""processors"": """",
-                    ""groups"": """",
+                    ""groups"": ""KB+Mouse"",
                     ""action"": ""Move"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
@@ -153,7 +153,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""path"": ""<Keyboard>/a"",
                     ""interactions"": """",
                     ""processors"": """",
-                    ""groups"": """",
+                    ""groups"": ""KB+Mouse"",
                     ""action"": ""Move"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
@@ -164,7 +164,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""path"": ""<Keyboard>/d"",
                     ""interactions"": """",
                     ""processors"": """",
-                    ""groups"": """",
+                    ""groups"": ""KB+Mouse"",
                     ""action"": ""Move"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
@@ -175,7 +175,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""path"": ""<Mouse>/leftButton"",
                     ""interactions"": """",
                     ""processors"": """",
-                    ""groups"": """",
+                    ""groups"": ""KB+Mouse"",
                     ""action"": ""Click"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
@@ -186,7 +186,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""path"": ""<Keyboard>/#(E)"",
                     ""interactions"": """",
                     ""processors"": """",
-                    ""groups"": """",
+                    ""groups"": ""KB+Mouse"",
                     ""action"": ""Interact"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
@@ -197,7 +197,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""path"": ""<Keyboard>/escape"",
                     ""interactions"": """",
                     ""processors"": """",
-                    ""groups"": """",
+                    ""groups"": ""KB+Mouse"",
                     ""action"": ""Cancel"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
@@ -210,6 +210,54 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": ""KB+Mouse"",
                     ""action"": ""Crouch"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
+        },
+        {
+            ""name"": ""Camera Mode"",
+            ""id"": ""80beb313-27ee-4496-95ce-7227cdec6380"",
+            ""actions"": [
+                {
+                    ""name"": ""ToggleCamera"",
+                    ""type"": ""Button"",
+                    ""id"": ""aec4e496-d56c-4529-b550-87bb48151064"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Capture"",
+                    ""type"": ""Button"",
+                    ""id"": ""298ef530-b252-4e2b-bbfa-116654a2b30b"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""0492829f-669f-42f1-87cc-6cb79d860229"",
+                    ""path"": ""<Keyboard>/c"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""KB+Mouse"",
+                    ""action"": ""ToggleCamera"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""5e3d1472-df2f-4841-a207-63a9593f7c02"",
+                    ""path"": ""<Keyboard>/f"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""KB+Mouse"",
+                    ""action"": ""Capture"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -244,6 +292,10 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         m_Gameplay_Interact = m_Gameplay.FindAction("Interact", throwIfNotFound: true);
         m_Gameplay_Cancel = m_Gameplay.FindAction("Cancel", throwIfNotFound: true);
         m_Gameplay_Crouch = m_Gameplay.FindAction("Crouch", throwIfNotFound: true);
+        // Camera Mode
+        m_CameraMode = asset.FindActionMap("Camera Mode", throwIfNotFound: true);
+        m_CameraMode_ToggleCamera = m_CameraMode.FindAction("ToggleCamera", throwIfNotFound: true);
+        m_CameraMode_Capture = m_CameraMode.FindAction("Capture", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -395,6 +447,60 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         }
     }
     public GameplayActions @Gameplay => new GameplayActions(this);
+
+    // Camera Mode
+    private readonly InputActionMap m_CameraMode;
+    private List<ICameraModeActions> m_CameraModeActionsCallbackInterfaces = new List<ICameraModeActions>();
+    private readonly InputAction m_CameraMode_ToggleCamera;
+    private readonly InputAction m_CameraMode_Capture;
+    public struct CameraModeActions
+    {
+        private @Controls m_Wrapper;
+        public CameraModeActions(@Controls wrapper) { m_Wrapper = wrapper; }
+        public InputAction @ToggleCamera => m_Wrapper.m_CameraMode_ToggleCamera;
+        public InputAction @Capture => m_Wrapper.m_CameraMode_Capture;
+        public InputActionMap Get() { return m_Wrapper.m_CameraMode; }
+        public void Enable() { Get().Enable(); }
+        public void Disable() { Get().Disable(); }
+        public bool enabled => Get().enabled;
+        public static implicit operator InputActionMap(CameraModeActions set) { return set.Get(); }
+        public void AddCallbacks(ICameraModeActions instance)
+        {
+            if (instance == null || m_Wrapper.m_CameraModeActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_CameraModeActionsCallbackInterfaces.Add(instance);
+            @ToggleCamera.started += instance.OnToggleCamera;
+            @ToggleCamera.performed += instance.OnToggleCamera;
+            @ToggleCamera.canceled += instance.OnToggleCamera;
+            @Capture.started += instance.OnCapture;
+            @Capture.performed += instance.OnCapture;
+            @Capture.canceled += instance.OnCapture;
+        }
+
+        private void UnregisterCallbacks(ICameraModeActions instance)
+        {
+            @ToggleCamera.started -= instance.OnToggleCamera;
+            @ToggleCamera.performed -= instance.OnToggleCamera;
+            @ToggleCamera.canceled -= instance.OnToggleCamera;
+            @Capture.started -= instance.OnCapture;
+            @Capture.performed -= instance.OnCapture;
+            @Capture.canceled -= instance.OnCapture;
+        }
+
+        public void RemoveCallbacks(ICameraModeActions instance)
+        {
+            if (m_Wrapper.m_CameraModeActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        public void SetCallbacks(ICameraModeActions instance)
+        {
+            foreach (var item in m_Wrapper.m_CameraModeActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_CameraModeActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    public CameraModeActions @CameraMode => new CameraModeActions(this);
     private int m_KBMouseSchemeIndex = -1;
     public InputControlScheme KBMouseScheme
     {
@@ -413,5 +519,10 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         void OnInteract(InputAction.CallbackContext context);
         void OnCancel(InputAction.CallbackContext context);
         void OnCrouch(InputAction.CallbackContext context);
+    }
+    public interface ICameraModeActions
+    {
+        void OnToggleCamera(InputAction.CallbackContext context);
+        void OnCapture(InputAction.CallbackContext context);
     }
 }
