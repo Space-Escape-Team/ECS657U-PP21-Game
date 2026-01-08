@@ -7,7 +7,7 @@ using UnityEngine.UI;
 /// Generates a random sequence of button indices; player must press buttons in order.
 /// Correct press flashes green and advances progress (optionally shown via pips); wrong press flashes red and resets progress.
 /// Completing the full sequence notifies/marks the puzzle panel complete.
-public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
+public class PuzzleB_UI : MonoBehaviour, IPuzzleUI, IPuzzlePanelBindable
 {
     [Header("World Panel")]
     [SerializeField] private PuzzlePanel_script puzzlePanel;
@@ -26,6 +26,11 @@ public class PuzzleB_UI : MonoBehaviour, IPuzzleUI
 
     private readonly List<int> sequence = new();
     private int index = 0;
+
+    public void BindPanel(PuzzlePanel_script panel)
+    {
+        puzzlePanel = panel;
+    }
 
     private void Awake()
     {

@@ -2,8 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// Base class for all world puzzles.
-/// Manages player proximity, input handling, puzzle UI lifecycle, and player UI mode locking.
-/// Concrete puzzles extend this and optionally override open/close behavior.
+/// Manages player proximity, input handling, puzzle UI lifecycle, and (optional) camera cursor locking.
 public class Puzzle_script : MonoBehaviour
 {
     protected Controls controls;
@@ -11,11 +10,8 @@ public class Puzzle_script : MonoBehaviour
     [Header("Puzzle UI")]
     [SerializeField] protected GameObject puzzleUIScreen;
 
-    [Header("Prompt Text")]
-    [SerializeField] public string puzzlePrompt = "Press E to interact";
-
-    [Header("Player Lock")]
-    [SerializeField] private PlayerUIModeLock playerLock;
+    [Header("Camera Lock (optional)")]
+    [SerializeField] private FirstPersonCameraController cameraController;
 
     protected bool playerInRange = false;
     protected bool puzzleActive = false;
@@ -24,7 +20,7 @@ public class Puzzle_script : MonoBehaviour
 
     protected virtual void Awake()
     {
-        /// Set up input bindings, cache puzzle UI, hide UI by default, and auto-resolve player lock if needed.
+        /// Set up input bindings, cache puzzle UI, hide UI by default, and auto-resolve camera controller if needed.
         controls = new Controls();
 
         controls.Gameplay.Interact.performed += _ => TryOpenPuzzle();
@@ -35,11 +31,11 @@ public class Puzzle_script : MonoBehaviour
         if (puzzleUIScreen != null)
             puzzleUIScreen.SetActive(false);
 
-        if (playerLock == null)
+        if (cameraController == null)
         {
             var player = GameObject.FindGameObjectWithTag("Player");
             if (player != null)
-                playerLock = player.GetComponent<PlayerUIModeLock>();
+                cameraController = player.GetComponentInChildren<FirstPersonCameraController>();
         }
     }
 
@@ -86,21 +82,34 @@ public class Puzzle_script : MonoBehaviour
 
     protected virtual void OpenPuzzle()
     {
-        /// Reset puzzle UI, lock player controls, and show the puzzle screen.
+        /// Reset puzzle UI, unlock cursor (stops camera rotation), and show the puzzle screen.
         if (puzzleUIScreen == null) return;
 
         CachePuzzleUI();
         puzzleUI?.ResetPuzzle();
 
-        playerLock?.EnterPuzzleMode();
+        // Bind the world panel to the puzzle UI
+        var panel = this as PuzzlePanel_script;
+        if (panel != null)
+        {
+            var bindable = puzzleUIScreen.GetComponentInChildren<IPuzzlePanelBindable>(true);
+            bindable?.BindPanel(panel);
+
+            if (bindable == null)
+                Debug.LogWarning($"[PUZZLE] {name} opened a puzzle UI but it doesn't implement IPuzzlePanelBindable.", this);
+        }
+
+        // Camera lock
+        cameraController?.SetCursorLock(false);
 
         puzzleUIScreen.SetActive(true);
         puzzleActive = true;
     }
 
+
     protected virtual void ClosePuzzle()
     {
-        /// Reset puzzle UI, hide the screen, and restore player controls.
+        /// Reset puzzle UI, hide the screen, and re-lock cursor to restore camera rotation.
         if (puzzleUIScreen == null) return;
 
         puzzleUI?.ResetPuzzle();
@@ -108,6 +117,6 @@ public class Puzzle_script : MonoBehaviour
         puzzleUIScreen.SetActive(false);
         puzzleActive = false;
 
-        playerLock?.ExitPuzzleMode();
+        cameraController?.SetCursorLock(true);
     }
 }

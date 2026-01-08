@@ -763,6 +763,8 @@ MonoBehaviour:
   proneMinPitch: -5
   proneMaxPitch: 25
   proneSensMultiplier: 0.5
+  proneTurnSpeed: 45
+  proneTurnInput: 0
 --- !u!20 &397325080
 Camera:
   m_ObjectHideFlags: 0
@@ -829,6 +831,7 @@ GameObject:
   - component: {fileID: 464192650}
   - component: {fileID: 464192649}
   - component: {fileID: 464192648}
+  - component: {fileID: 464192655}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -874,8 +877,6 @@ MonoBehaviour:
   puzzleLayer:
     serializedVersion: 2
     m_Bits: 32
-  promptUI: {fileID: 0}
-  promptText: {fileID: 0}
 --- !u!114 &464192650
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -890,6 +891,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 3
   cameraTransitionSpeed: 5
+  proneTurnSpeed: 45
   orientation: {fileID: 2058381250}
   pov: {fileID: 1703587472}
   move: {fileID: -1456154572009481821, guid: 8dcc6a318ec0ec6409f2446ba1eb207c, type: 3}
@@ -989,6 +991,19 @@ Transform:
   - {fileID: 6766536238303410336}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &464192655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 464192647}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3bf3c9627aa607d498ece935097f6fd4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  firstPersonCameraController: {fileID: 0}
 --- !u!1 &471883232
 GameObject:
   m_ObjectHideFlags: 0
@@ -1211,6 +1226,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   puzzleUIScreen: {fileID: 0}
   puzzlePrompt: Press E to interact
+  cameraController: {fileID: 0}
   isCompleted: 0
 --- !u!54 &826135625
 Rigidbody:
@@ -4697,6 +4713,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   puzzleUIScreen: {fileID: 2072982998}
   puzzlePrompt: Press E to interact
+  cameraController: {fileID: 397325079}
   isCompleted: 0
 --- !u!65 &2083515256
 BoxCollider:
@@ -4865,6 +4882,8 @@ MonoBehaviour:
   proneMinPitch: -5
   proneMaxPitch: 25
   proneSensMultiplier: 0.5
+  proneTurnSpeed: 45
+  proneTurnInput: 0
 --- !u!20 &2097569259
 Camera:
   m_ObjectHideFlags: 0

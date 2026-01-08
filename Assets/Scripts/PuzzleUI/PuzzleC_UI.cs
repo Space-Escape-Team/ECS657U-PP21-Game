@@ -4,7 +4,7 @@ using UnityEngine.UI;
 /// Slider alignment puzzle UI.
 /// Each slider has a hidden target value in [0,1]; indicators turn green when within tolerance.
 /// Puzzle is solved when all sliders are within tolerance, at which point input is locked and completion is reported.
-public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
+public class PuzzleC_UI : MonoBehaviour, IPuzzleUI,IPuzzlePanelBindable
 {
     [Header("World Panel")]
     [SerializeField] private PuzzlePanel_script puzzlePanel;
@@ -24,6 +24,11 @@ public class PuzzleC_UI : MonoBehaviour, IPuzzleUI
     private static readonly Color IndicatorOff = new Color(0.70f, 0.70f, 0.70f, 1f);
 
     private bool solved = false;
+
+    public void BindPanel(PuzzlePanel_script panel)
+    {
+        puzzlePanel = panel;
+    }
 
     private void Awake()
     {

@@ -6,7 +6,7 @@ using UnityEngine.UI;
 /// Generates a hidden target bool[9]; player must match it exactly.
 /// When a cell is turned ON it flashes green/red depending on correctness, then auto-resets after resetDelay.
 /// Solving locks input, cancels timers, and notifies/marks the puzzle panel complete.
-public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
+public class PuzzleD_UI : MonoBehaviour, IPuzzleUI, IPuzzlePanelBindable
 {
     [Header("World Panel")]
     [SerializeField] private PuzzlePanel_script puzzlePanel;
@@ -25,6 +25,11 @@ public class PuzzleD_UI : MonoBehaviour, IPuzzleUI
     private static readonly Color BaseColor = HexToColor("585858");
     private bool solved = false;
     private Coroutine[] resetCoroutines;
+
+    public void BindPanel(PuzzlePanel_script panel)
+    {
+        puzzlePanel = panel;
+    }
 
     private void Awake()
     {

@@ -10,10 +10,6 @@ public class PlayerPuzzleInteractor : MonoBehaviour
     public float interactionRange = 3f;
     public LayerMask puzzleLayer;
 
-    [Header("UI Elements")]
-    [SerializeField] private GameObject promptUI;
-    [SerializeField] private TextMeshProUGUI promptText;
-
     private Camera cam;
     private Controls controls;
     private Puzzle_script currentPuzzle;
@@ -50,14 +46,12 @@ public class PlayerPuzzleInteractor : MonoBehaviour
                 if (puzzle != currentPuzzle)
                 {
                     currentPuzzle = puzzle;
-                    ShowPrompt(puzzle.puzzlePrompt);
                 }
                 return;
             }
         }
 
         /// Clear prompt when not looking at a valid puzzle.
-        HidePrompt();
         currentPuzzle = null;
     }
 
@@ -67,7 +61,6 @@ public class PlayerPuzzleInteractor : MonoBehaviour
         if (currentPuzzle != null)
         {
             currentPuzzle.TryOpenPuzzle();
-            HidePrompt();
         }
     }
 
@@ -76,20 +69,5 @@ public class PlayerPuzzleInteractor : MonoBehaviour
         /// Forward cancel input to the active puzzle, if any.
         if (currentPuzzle != null)
             currentPuzzle.TryClosePuzzle();
-    }
-
-    private void ShowPrompt(string message)
-    {
-        if (promptUI != null && promptText != null)
-        {
-            promptUI.SetActive(true);
-            promptText.text = message;
-        }
-    }
-
-    private void HidePrompt()
-    {
-        if (promptUI != null)
-            promptUI.SetActive(false);
     }
 }

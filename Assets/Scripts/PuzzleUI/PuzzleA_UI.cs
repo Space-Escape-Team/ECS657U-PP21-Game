@@ -6,7 +6,7 @@ using UnityEngine.UI;
 /// Each side is assigned IDs (0..pairCount-1) with matching colors; right side is shuffled.
 /// Player selects a left node, then clicks a right node to create/replace a connection (wire is spawned and colored by left ID).
 /// Wires update every frame to follow node positions. Puzzle is solved when every required left ID is connected to the matching right ID.
-public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
+public class PuzzleA_UI : MonoBehaviour, IPuzzleUI, IPuzzlePanelBindable
 {
     [Header("World Panel")]
     [SerializeField] private PuzzlePanel_script puzzlePanel;
@@ -42,6 +42,11 @@ public class PuzzleA_UI : MonoBehaviour, IPuzzleUI
     private readonly Dictionary<Button, RectTransform> connectionWires = new();
 
     private Button selectedLeft;
+
+    public void BindPanel(PuzzlePanel_script panel)
+    {
+        puzzlePanel = panel;
+    }
 
     private void Awake()
     {
