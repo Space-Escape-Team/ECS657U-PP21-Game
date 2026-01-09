@@ -8,5 +8,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Test Scenes/MainMenu.unity
     guid: eb9cabd4688b64048aa9ffb359994ba6
+  - enabled: 1
+    path: Assets/Scenes/Main Combined Scene/Main Combined Scene.unity
+    guid: 01d85cca7325af842899b2f99a8cffe7
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0
