@@ -6,7 +6,19 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Test Scenes/MainMenu.unity
+    path: Assets/Scenes/MainMenu.unity
     guid: eb9cabd4688b64048aa9ffb359994ba6
+  - enabled: 1
+    path: Assets/Scenes/CentralHub.unity
+    guid: faf35493f91665a4694194224d2ba710
+  - enabled: 1
+    path: Assets/Scenes/Levels/Level1.unity
+    guid: 01d85cca7325af842899b2f99a8cffe7
+  - enabled: 1
+    path: Assets/Scenes/Levels/Level2Mushroom.unity
+    guid: 367aa1a2f8bb3114f82de3f42a926361
+  - enabled: 1
+    path: Assets/Scenes/Levels/Level3Ruins.unity
+    guid: 1f0addd3662d9b843ba79a63d4bb3fab
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0
