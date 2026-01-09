@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Audio;
-using UnityEngine.UI;
+using TMPro;
+
 
 public class OptionsMenu : MonoBehaviour // the methods for the options menu
 {
     public AudioMixer audioMixer; // calls an audio mixer
 
-    public Dropdown resDropdown; // calls a dropdown menu
+    public TMP_Dropdown resDropdown; // calls a dropdown menu
 
     Resolution[] res; // set an array for the possible resolutions on a given PC
 
@@ -23,7 +24,7 @@ public class OptionsMenu : MonoBehaviour // the methods for the options menu
 
         for (int i = 0; i < res.Length; i++) // for the length of the resolution array
         {
-            string option = res[i].width + "x" + res[i].height;
+            string option = res[i].width + " x " + res[i].height;
             resOptions.Add(option);
 
             if (res[i].width == Screen.currentResolution.width && res[i].height == Screen.currentResolution.height)
