@@ -27,7 +27,7 @@ public class OptionsMenu : MonoBehaviour // the methods for the options menu
             string option = res[i].width + " x " + res[i].height;
             resOptions.Add(option);
 
-            if (res[i].width == Screen.currentResolution.width && res[i].height == Screen.currentResolution.height)
+            if (res[i].width == Screen.width && res[i].height == Screen.height)
             {
                 currentResIndex = i;
             }
