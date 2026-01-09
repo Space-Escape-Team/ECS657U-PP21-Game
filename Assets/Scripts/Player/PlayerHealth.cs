@@ -93,5 +93,6 @@ public class PlayerHealth : MonoBehaviour
 
         IsAlive = false;
         Debug.Log("Player died");
+        FindFirstObjectByType<EndingRouter>()?.LoadEndingForProgress();
     }
 }
