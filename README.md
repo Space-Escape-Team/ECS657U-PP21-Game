@@ -21,6 +21,7 @@ Tutorials followed:<br />
 <br />
 Creating an Open World: https://youtu.be/WbZpj8WcjN0?si=rAOTNJuFtH9tAVyx<br />
 Implementating a Main Menu: https://www.youtube.com/watch?v=-GWjA6dixV4<br />
+Animations and Transitions: https://youtu.be/CE9VOZivb3I?si=l5DoqKNqW6aNl_1M<br />
 https://gameprogrammingpatterns.com/state.html<br />
 https://www.kodeco.com/657-ui-state-management-in-games<br />
 https://github.com/SebLague/Logic-Gates<br />
