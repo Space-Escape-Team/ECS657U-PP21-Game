@@ -16,6 +16,7 @@ public class LevelLoader : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
+            DontDestroyOnLoad(gameObject);
         } 
         else
         {
@@ -30,7 +31,7 @@ public class LevelLoader : MonoBehaviour
 
     public void LoadNextLevel()
     {
-        StartCoroutine(LoadLevelCoroutine(SceneManager.GetActiveScene().buildIndex + 1));
+        LoadLevel(SceneManager.GetActiveScene().buildIndex + 1);
     }
 
     IEnumerator LoadLevelCoroutine(int levelIndex)
