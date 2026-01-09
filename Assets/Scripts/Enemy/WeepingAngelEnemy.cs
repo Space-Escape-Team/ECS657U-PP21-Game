@@ -18,8 +18,8 @@ public class WeepingAngelEnemy : MonoBehaviour
 
     [Header("Movement")]
     private float baseSpeed;
-    [SerializeField] private float minBaseSpeed = 15f;
-    [SerializeField] private float maxBaseSpeed = 30f;
+    [SerializeField] private float minBaseSpeed = 10;
+    [SerializeField] private float maxBaseSpeed = 20f;
 
     [SerializeField] private float turnSpeed = 10000f;
 
@@ -43,7 +43,7 @@ public class WeepingAngelEnemy : MonoBehaviour
     [SerializeField] private float spawnArriveDistance = 5f;
 
     [Header("Combat")]
-    [SerializeField] private float attackRange = 5f;
+    [SerializeField] private float attackRange = 2f;
     [SerializeField] private float attackInterval = 3f;
     [SerializeField] private int attackDamage;
 

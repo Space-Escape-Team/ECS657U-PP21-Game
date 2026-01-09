@@ -29,8 +29,8 @@ public class RunnerEnemy : MonoBehaviour
 
     [Header("Speed")]
     private float moveSpeed;
-    [SerializeField] private float minMoveSpeed = 10f;
-    [SerializeField] private float maxMoveSpeed = 20f;
+    [SerializeField] private float minMoveSpeed = 3f;
+    [SerializeField] private float maxMoveSpeed = 10f;
     [SerializeField] private float turnSpeed = 1000f;
 
     [Header("Animation")]
@@ -50,7 +50,7 @@ public class RunnerEnemy : MonoBehaviour
     [SerializeField] private float minForgetTime = 10f;
     [SerializeField] private float maxForgetTime = 20f;
 
-    [SerializeField] private float closeRetentionRadius = 10f;
+    [SerializeField] private float closeRetentionRadius = 25f;
     [SerializeField] private LayerMask visionMask = ~0;
     [SerializeField] private float eyeHeight = 1.0f;
     [SerializeField] private float playerAimHeight = 1.0f;
@@ -62,7 +62,7 @@ public class RunnerEnemy : MonoBehaviour
     [SerializeField] private float searchPausePerLook = 3f;
 
     [Header("Combat")]
-    [SerializeField] private float attackRange = 3f;
+    [SerializeField] private float attackRange = 1f;
     [SerializeField] private int attackDamage;
     [SerializeField] private float attackInterval = 3f;
 
@@ -102,7 +102,7 @@ public class RunnerEnemy : MonoBehaviour
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
-        agent.stoppingDistance = Mathf.Max(attackRange - 0.2f, 2f);
+        agent.stoppingDistance = attackRange;
         agent.updateRotation = false;
 
         spawnPoint = transform.position;

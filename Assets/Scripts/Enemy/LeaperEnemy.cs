@@ -34,8 +34,8 @@ public class LeaperEnemy : MonoBehaviour
 
     [Header("Hop Movement")]
     private float hopDistance;
-    [SerializeField] private float minHopDistance = 5f;
-    [SerializeField] private float maxHopDistance = 10f;
+    [SerializeField] private float minHopDistance = 2f;
+    [SerializeField] private float maxHopDistance = 5f;
 
     [SerializeField] private float hopDuration = 1f;
     [SerializeField] private float hopArcHeight = 10f;
@@ -67,7 +67,7 @@ public class LeaperEnemy : MonoBehaviour
     [SerializeField] private float playerAimHeight = 1.0f;
 
     [Header("Combat")]
-    [SerializeField] private float attackRange = 5f;
+    [SerializeField] private float attackRange = 1f;
     [SerializeField] private float attackInterval = 3f;
     private int attackDamage;
 
@@ -411,17 +411,30 @@ public class LeaperEnemy : MonoBehaviour
         float distance = Vector3.Distance(start, landing);
         float scaledHopHeight = hopArcHeight * Mathf.Clamp01(distance / hopDistance);
 
-        // Move in an arc over hopDuration
+        // Move in an arc over hopDuration, respecting slopes
         float t = 0f;
         while (t < hopDuration)
         {
-            float a = t / hopDuration; // 0 -> 1
-            Vector3 pos = Vector3.Lerp(start, landing, a);
+            float a = t / hopDuration;
 
-            // Parabolic vertical offset
-            pos.y = startY + scaledHopHeight * 4f * a * (1f - a);
+            // Horizontal movement
+            Vector3 horizontalPos = Vector3.Lerp(start, landing, a);
 
-            transform.position = pos;
+            // Sample ground height at this position
+            float groundY = horizontalPos.y;
+            if (NavMesh.SamplePosition(horizontalPos, out NavMeshHit groundHit, 1.0f, NavMesh.AllAreas))
+            {
+                groundY = groundHit.position.y;
+            }
+
+            // Hop arc relative to ground
+            float arc = scaledHopHeight * 4f * a * (1f - a);
+
+            transform.position = new Vector3(
+                horizontalPos.x,
+                groundY + arc,
+                horizontalPos.z
+            );
 
             t += Time.deltaTime;
             yield return null;
