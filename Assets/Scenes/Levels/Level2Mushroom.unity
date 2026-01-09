@@ -5603,7 +5603,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   timerText: {fileID: 759932004}
-  playerHealth: {fileID: 0}
+  playerHealth: {fileID: 3145314}
 --- !u!114 &759932004
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -4114,7 +4114,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   timerText: {fileID: 1898661417}
-  playerHealth: {fileID: 0}
+  playerHealth: {fileID: 464192656}
 --- !u!114 &1898661417
 MonoBehaviour:
   m_ObjectHideFlags: 0

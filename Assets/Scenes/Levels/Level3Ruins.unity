@@ -2473,7 +2473,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   timerText: {fileID: 428813983}
-  playerHealth: {fileID: 1215671612}
+  playerHealth: {fileID: 1327055762}
 --- !u!114 &428813983
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7832,7 +7832,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1215671614}
   - component: {fileID: 1215671613}
-  - component: {fileID: 1215671612}
   m_Layer: 0
   m_Name: HealthBar
   m_TagString: Untagged
@@ -7840,21 +7839,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1215671612
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1215671611}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cbfb96e948f2f5c46adb8d53b1efe032, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxHealth: 100
-  currentHealth: 0
-  healthBarSlider: {fileID: 1215671613}
 --- !u!114 &1215671613
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8381,6 +8365,7 @@ GameObject:
   - component: {fileID: 1327055755}
   - component: {fileID: 1327055754}
   - component: {fileID: 1327055761}
+  - component: {fileID: 1327055762}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -8459,7 +8444,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5876ecfcb8317484e8ff1b06133845d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerHealth: {fileID: 1215671612}
+  playerHealth: {fileID: 0}
   playerPuzzleInteractor: {fileID: 0}
   times_completed: 0
 --- !u!114 &1327055758
@@ -8550,6 +8535,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   difficulty: 2
+--- !u!114 &1327055762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1327055753}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbfb96e948f2f5c46adb8d53b1efe032, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  currentHealth: 0
+  healthBarSlider: {fileID: 1215671613}
 --- !u!1001 &1340699033
 PrefabInstance:
   m_ObjectHideFlags: 0
