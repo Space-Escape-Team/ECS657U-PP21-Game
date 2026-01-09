@@ -20,5 +20,20 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Levels/Level3Ruins.unity
     guid: 1f0addd3662d9b843ba79a63d4bb3fab
+  - enabled: 1
+    path: Assets/Scenes/Death.unity
+    guid: 7da4e624601a2ec4dade09ec4eb042f9
+  - enabled: 1
+    path: Assets/Scenes/Endings/Ending1.unity
+    guid: d99f09c968ff1b343b81dbe505d23db7
+  - enabled: 1
+    path: Assets/Scenes/Endings/Ending2.unity
+    guid: 228ebdb34521eec4fa76dcd8fb532de4
+  - enabled: 1
+    path: Assets/Scenes/Endings/Ending3.unity
+    guid: b0cbca6fbab9f574faf8a6e8eaaa85d2
+  - enabled: 1
+    path: Assets/Scenes/Endings/Ending4.unity
+    guid: 994eac3f278603742a337874296eff28
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

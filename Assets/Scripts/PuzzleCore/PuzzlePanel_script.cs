@@ -22,6 +22,7 @@ public class PuzzlePanel_script : Puzzle_script
         if (isCompleted) return;
 
         isCompleted = true;
+        ProgressManager.Instance?.RegisterPuzzleCompleted(gameObject.name);
 
         Debug.Log($"[PUZZLE COMPLETE] {gameObject.name} marked complete.", this);
     }

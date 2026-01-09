@@ -1,27 +1,33 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class MainMenu : MonoBehaviour // the methods for the main menu
+public class MainMenu : MonoBehaviour
 {
-    public int sceneToLoad;
-    public void PlayGame ()
+    [Header("Scenes")]
+    [SerializeField] private string hubSceneName = "Hub";
+
+    public void PlayGame()
     {
-        Debug.Log("START PLEASE!"); // throws the given text into the debugger if successful
-        LevelLoader.Instance.LoadNextLevel(); // Loads the next scene, which should be the hub area.
+        Debug.Log("[MAIN MENU] New Game");
+
+        // Reset progress for a new run
+        if (ProgressManager.Instance != null)
+            ProgressManager.Instance.ResetProgress();
+
+        SceneManager.LoadScene(hubSceneName);
     }
 
-    public void LoadGame ()
+    public void LoadGame()
     {
-        Debug.Log("START PLEASE!"); // throws the given text into the debugger if successful
-        LevelLoader.Instance.LoadLevel(sceneToLoad); // Loads the next scene, which should be the hub area.
+        Debug.Log("[MAIN MENU] Continue Game");
+
+        // Load hub without resetting progress
+        SceneManager.LoadScene(hubSceneName);
     }
 
-    public void QuitGame ()
+    public void QuitGame()
     {
-        Debug.Log("QUIT PLEASE!"); // throws the given text into the debugger if successful
-        Application.Quit(); // closes the game
+        Debug.Log("[MAIN MENU] Quit");
+        Application.Quit();
     }
 }
-
